@@ -39,6 +39,15 @@ from .pigments import (
 from .unmixer import RGBUnmixer
 from .api import FilamentMixer, LATENT_SIZE
 
+# Optional LUT support (requires tqdm/Pillow)
+try:
+    from .lut import LUTGenerator, FastLUTMixer
+    _HAS_LUT = True
+except ImportError:
+    _HAS_LUT = False
+    LUTGenerator = None
+    FastLUTMixer = None
+
 __all__ = [
     # Core
     "KubelkaMunk",
@@ -67,4 +76,7 @@ __all__ = [
     # API
     "FilamentMixer",
     "LATENT_SIZE",
+    # LUT (optional)
+    "LUTGenerator",
+    "FastLUTMixer",
 ]

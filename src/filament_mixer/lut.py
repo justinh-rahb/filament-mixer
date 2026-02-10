@@ -193,3 +193,108 @@ class LUTGenerator:
 
         Image.fromarray(img).save(filepath)
         print(f"  Saved: {filepath}")
+
+
+class FastLUTMixer:
+    """
+    Fast color mixer using precomputed LUT tables.
+    
+    Provides the same API as FilamentMixer but uses table lookups
+    instead of runtime optimization for ~1000x speedup.
+    """
+
+    def __init__(self, unmix_lut: np.ndarray, mix_lut: np.ndarray):
+        """
+        Args:
+            unmix_lut: Precomputed RGB->concentration table [256,256,256,3]
+            mix_lut: Precomputed concentration->RGB table [256,256,256,3]
+        """
+        self.unmix_lut = unmix_lut
+        self.mix_lut = mix_lut
+        self.resolution = unmix_lut.shape[0]
+
+    @classmethod
+    def from_cache(cls, cache_dir: str, resolution: int = 256):
+        """Load LUT tables from cache files."""
+        import pickle
+        
+        cache_path = Path(cache_dir)
+        unmix_file = cache_path / f"unmix_lut_{resolution}.pkl"
+        mix_file = cache_path / f"mix_lut_{resolution}.pkl"
+        
+        if not unmix_file.exists() or not mix_file.exists():
+            raise FileNotFoundError(
+                f"LUT cache files not found. Generate them first with:\n"
+                f"  python scripts/generate_lut.py --resolution {resolution}"
+            )
+        
+        with open(unmix_file, "rb") as f:
+            unmix_lut = pickle.load(f)
+        with open(mix_file, "rb") as f:
+            mix_lut = pickle.load(f)
+        
+        return cls(unmix_lut, mix_lut)
+
+    def rgb_to_latent(self, r: int, g: int, b: int) -> np.ndarray:
+        """Convert RGB to 7D latent (fast LUT lookup)."""
+        # Scale RGB from 0-255 to LUT resolution
+        scale = (self.resolution - 1) / 255.0
+        r_idx = int(r * scale)
+        g_idx = int(g * scale)
+        b_idx = int(b * scale)
+        
+        # Simple nearest-neighbor lookup
+        conc = self.unmix_lut[r_idx, g_idx, b_idx, :]
+        
+        # Reconstruct RGB to compute residual
+        c4 = 1.0 - np.sum(conc)
+        full_conc = np.array([conc[0], conc[1], conc[2], c4])
+        
+        # Get mixed RGB from concentration
+        c1_idx = int(conc[0] * (self.resolution - 1))
+        c2_idx = int(conc[1] * (self.resolution - 1))
+        c3_idx = int(conc[2] * (self.resolution - 1))
+        
+        if c4 >= 0:
+            mixed_rgb = self.mix_lut[c1_idx, c2_idx, c3_idx, :]
+        else:
+            mixed_rgb = np.array([r/255.0, g/255.0, b/255.0])
+        
+        residual = np.array([r/255.0, g/255.0, b/255.0]) - mixed_rgb
+        
+        latent = np.zeros(7)
+        latent[0:3] = conc
+        latent[3] = c4
+        latent[4:7] = residual
+        return latent
+
+    def latent_to_rgb(self, latent: np.ndarray) -> tuple[int, int, int]:
+        """Convert 7D latent to RGB (fast LUT lookup)."""
+        conc = latent[0:3]
+        residual = latent[4:7]
+        
+        c1_idx = int(np.clip(conc[0] * (self.resolution - 1), 0, self.resolution - 1))
+        c2_idx = int(np.clip(conc[1] * (self.resolution - 1), 0, self.resolution - 1))
+        c3_idx = int(np.clip(conc[2] * (self.resolution - 1), 0, self.resolution - 1))
+        
+        mixed_rgb = self.mix_lut[c1_idx, c2_idx, c3_idx, :]
+        final_rgb = mixed_rgb + residual
+        final_rgb = np.clip(final_rgb, 0, 1)
+        
+        return (
+            int(final_rgb[0] * 255),
+            int(final_rgb[1] * 255),
+            int(final_rgb[2] * 255),
+        )
+
+    def lerp(
+        self,
+        r1: int, g1: int, b1: int,
+        r2: int, g2: int, b2: int,
+        t: float,
+    ) -> tuple[int, int, int]:
+        """Mix two colors (fast LUT-based)."""
+        latent1 = self.rgb_to_latent(r1, g1, b1)
+        latent2 = self.rgb_to_latent(r2, g2, b2)
+        latent_mix = (1 - t) * latent1 + t * latent2
+        return self.latent_to_rgb(latent_mix)
