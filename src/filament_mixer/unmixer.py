@@ -77,7 +77,11 @@ class RGBUnmixer:
         if not result.success:
             print(f"Warning: Unmixing failed for RGB{rgb}: {result.message}")
 
-        return result.x
+        # Normalize to ensure concentrations sum to exactly 1.0
+        x = result.x
+        x = np.clip(x, 0.0, 1.0)
+        x = x / np.sum(x)
+        return x
 
     def unmix_with_residual(
         self, rgb: Tuple[float, float, float]

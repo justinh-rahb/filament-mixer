@@ -106,9 +106,11 @@ class KubelkaMunk:
         assert len(concentrations) == len(pigments), (
             "Concentration count must match pigment count"
         )
-        assert np.allclose(np.sum(concentrations), 1.0), (
+        assert np.allclose(np.sum(concentrations), 1.0, atol=1e-2), (
             f"Concentrations must sum to 1, got {np.sum(concentrations)}"
         )
+        # Normalize to exactly 1.0 to avoid drift from optimizer tolerances
+        concentrations = concentrations / np.sum(concentrations)
         assert np.all(concentrations >= 0), "Concentrations must be non-negative"
 
         K_mix = np.zeros(len(CIE_WAVELENGTHS))
