@@ -10,8 +10,10 @@ Usage:
 
     # Then run this benchmark:
     python benchmarks/compare_with_lut.py
+    python benchmarks/compare_with_lut.py --lut-resolution 256
 """
 
+import argparse
 import numpy as np
 import sys
 import time
@@ -155,7 +157,7 @@ EXPECTED_HUES = {
 # ---------------------------------------------------------------------------
 
 
-def benchmark_mixing():
+def benchmark_mixing(lut_resolution=64):
     """Run the head-to-head comparison."""
     mixer = FilamentMixer(CMYW_PALETTE)
     
@@ -163,10 +165,10 @@ def benchmark_mixing():
     lut_mixer = None
     if HAS_LUT:
         try:
-            lut_mixer = FastLUTMixer.from_cache("lut_cache", resolution=64)
-            print("  (Using 64³ LUT from lut_cache/)")
+            lut_mixer = FastLUTMixer.from_cache("lut_cache", resolution=lut_resolution)
+            print(f"  (Using {lut_resolution}³ LUT from lut_cache/)")
         except FileNotFoundError:
-            print("  (No LUT found - run: python scripts/generate_lut.py --resolution 64)")
+            print(f"  (No {lut_resolution}³ LUT found - run: python scripts/generate_lut.py --resolution {lut_resolution})")
             HAS_LUT_LOADED = False
         else:
             HAS_LUT_LOADED = True
@@ -307,7 +309,7 @@ def benchmark_delta_e(results, has_lut):
     print("  (< 2.0 = imperceptible, < 5.0 = minor, < 10.0 = noticeable)")
 
 
-def benchmark_speed(has_lut):
+def benchmark_speed(has_lut, lut_resolution=64):
     """Measure runtime performance."""
     print("\n" + "=" * 80)
     print("  SPEED")
@@ -335,7 +337,7 @@ def benchmark_speed(has_lut):
     # LUT mixer
     if has_lut:
         try:
-            lut_mixer = FastLUTMixer.from_cache("lut_cache", resolution=64)
+            lut_mixer = FastLUTMixer.from_cache("lut_cache", resolution=lut_resolution)
             start = time.time()
             for _ in range(n):
                 _ = lut_mixer.lerp(*c1, *c2, 0.5)
@@ -359,9 +361,19 @@ def benchmark_speed(has_lut):
 
 
 def main():
-    results, has_lut = benchmark_mixing()
+    parser = argparse.ArgumentParser(description="Benchmark color mixing with LUT support")
+    parser.add_argument(
+        "--lut-resolution",
+        type=int,
+        default=64,
+        choices=[64, 256],
+        help="LUT resolution to use (64 or 256)"
+    )
+    args = parser.parse_args()
+    
+    results, has_lut = benchmark_mixing(lut_resolution=args.lut_resolution)
     benchmark_delta_e(results, has_lut)
-    benchmark_speed(has_lut)
+    benchmark_speed(has_lut, lut_resolution=args.lut_resolution)
 
     print("\n" + "=" * 80)
     print("  DONE")

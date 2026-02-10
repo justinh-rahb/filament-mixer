@@ -29,6 +29,4 @@ Thumbs.db
 cache/
 *.pkl
 *.lut
-comparison.png
-color_wheel.png
-pigment_spectra.png
+#benchmarks/*.png
