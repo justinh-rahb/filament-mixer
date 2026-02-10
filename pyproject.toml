@@ -1,0 +1,71 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "filament-mixer"
+version = "0.1.0"
+description = "Physics-based color mixing for 3D printer filaments using Kubelka-Munk theory"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { name = "Justin H" },
+]
+keywords = [
+    "3d-printing",
+    "color-mixing",
+    "kubelka-munk",
+    "filament",
+    "slicer",
+    "multi-material",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Manufacturing",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Multimedia :: Graphics",
+    "Topic :: Scientific/Engineering",
+]
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+]
+
+[project.optional-dependencies]
+lut = [
+    "pillow>=9.0",
+    "tqdm>=4.60",
+]
+viz = [
+    "matplotlib>=3.6",
+]
+dev = [
+    "filament-mixer[lut,viz]",
+    "pytest>=7.0",
+    "ruff>=0.4",
+]
+
+[project.urls]
+Homepage = "https://github.com/justinh-rahb/filament-mixer"
+Repository = "https://github.com/justinh-rahb/filament-mixer"
+Issues = "https://github.com/justinh-rahb/filament-mixer/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/filament_mixer"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
