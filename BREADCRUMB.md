@@ -1,10 +1,9 @@
 # Project Breadcrumb: FilamentMixer
 
-## Current State (2026-02-10)
-- **Physics Core:** Implementation of Kubelka-Munk theory (Equations 1-7) is solid and verified.
-- **Performance:** A 256³ high-resolution LUT has been generated and integrated. Speed is now **~0.02ms** per mixing operation (347x speedup).
-- **Benchmarks:** Official `pymixbox` is integrated.
-- **Accuracy:** Mean Delta-E vs Mixbox is **11.77**. Automated optimization successfully tuned the pigment parameters (specifically White) to maximize fidelity.
+## Current State (2026-02-11)
+- **Production Performance:** The **PolyMixer (Experiment A)** has been productionized. It uses a 4th-degree polynomial regression to achieve a Mean Delta-E of **2.07** (vs 11.77 for pure physics) at **~0.001ms** per mix.
+- **Physics Core:** Implementation of Kubelka-Munk theory remains solid for N-way mixing and research. A 256³ high-resolution LUT (dE 11.77) is available for physics-based acceleration.
+- **Benchmarks:** Comprehensive suite including `compare_poly.py` and visual comparisons.
 
 ## 🚫 Failed Experiments (Do Not Repeat)
 - **Narrowing Yellow Peak (< 45nm width):** Attempted to reduce green overlap by narrowing Yellow's blue absorption. Resulted in **Blue leakage** into the green spectrum, worsening the mix (dE spiked to ~35).

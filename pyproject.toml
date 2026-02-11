@@ -43,11 +43,14 @@ lut = [
     "pillow>=9.0",
     "tqdm>=4.60",
 ]
+poly = [
+    "scikit-learn>=1.2",
+]
 viz = [
     "matplotlib>=3.6",
 ]
 dev = [
-    "filament-mixer[lut,viz]",
+    "filament-mixer[lut,poly,viz]",
     "pytest>=7.0",
     "ruff>=0.4",
 ]

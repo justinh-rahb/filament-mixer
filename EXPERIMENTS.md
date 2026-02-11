@@ -2,31 +2,31 @@
 
 We are exploring three distinct approaches to improve color mixing accuracy (specifically for Green) and runtime performance.
 
-## Experiment A: Polynomial Direct Mixing (6D → 3D)
+## Experiment A: Polynomial Direct Mixing (7D → 3D) — [PRODUCTIONIZED]
 
-**Hypothesis**: A simple polynomial regression can learn the mapping from two input colors `(R1, G1, B1, R2, G2, B2)` to a mixed color `(R_mix, G_mix, B_mix)` with sufficient accuracy to replace the physics engine entirely.
+**Hypothesis**: A simple polynomial regression can learn the mapping from two input colors `(R1, G1, B1, R2, G2, B2)` and the mixing ratio `t` to a mixed color `(R_mix, G_mix, B_mix)` with sufficient accuracy to replace the physics engine entirely.
 
--   **Model**: `sklearn.preprocessing.PolynomialFeatures(degree=3)` + `LinearRegression`.
--   **Training Data**: 50,000 random pairs mixed with `mixbox` (ground truth).
+-   **Model**: `sklearn.preprocessing.PolynomialFeatures(degree=4)` + `LinearRegression`.
+-   **Training Data**: 150,000 random pairs mixed with `mixbox` (ground truth), using continuous uniform `t` sampling.
 -   **Pros**:
     -   **Instant Inference**: Just matrix multiplication (~0.001ms).
-    -   **Simple**: No physics, no integration, no optimization.
-    -   **No Unmixing**: Bypasses the ill-posed `RGB -> Concentration` inverse problem.
+    -   **Accurate**: Captures subtle gamut nuances better than degree-3.
+    -   **Perfect Endpoints**: Hard-clamped in code to ensure 100% accuracy at $t=0$ and $t=1$.
 -   **Cons**:
-    -   **Black Box**: Doesn't "understand" pigments; might fail on edge cases.
-    -   **Pairwise Only**: Mixing 3+ colors requires iterative mixing, which accumulates error.
+    -   **Black Box**: Doesn't "understand" pigments; relies on training data coverage.
+    -   **Pairwise Only**: Mixing 3+ colors requires iterative mixing.
 
-**Implementation**: `scripts/experiment_polynomial.py`
+**Implementation**: `src/filament_mixer/poly_mixer.py`
 
-### Results (2026-02-10)
-- **Mean Delta-E**: **3.32** (vs 11.77 for Physics Engine).
-- **Speed**: **0.002ms** per mix (Instant).
+### Results (2026-02-11)
+- **Mean Delta-E**: **2.07** (vs 11.77 for Physics Engine).
+- **Speed**: **0.001ms** per mix (Instant).
 - **Blue + Yellow Test**:
-    - Predicted: `[42, 145, 48]` (Vibrant Green)
+    - Predicted (t=0.5): `[47, 141, 56]` (Vibrant Green)
     - Mixbox Ref: `[41, 130, 57]`
-    - **Result**: Successfully captured the "green" mixing behavior without any physics knowledge.
+    - **Result**: Successfully captured the "green" mixing behavior with excellent perceptual match.
 
-**Conclusion**: The simple 3rd-degree polynomial is **highly effective** for pairwise mixing. It outperforms the un-tuned physics model in accuracy by a large margin (dE 3.3 vs 11.8) and is computationally free.
+**Conclusion**: The 4th-degree polynomial is **the chosen production model** for high-performance mixing. It provides the best balance of speed, simplicity, and accuracy.
 
 
 ---

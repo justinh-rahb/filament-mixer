@@ -9,11 +9,10 @@ Replaces naive RGB interpolation — which produces muddy, desaturated blends �
 ## Status
 
 > **Alpha / Research.** This project implements the Kubelka-Munk mixing
-> pipeline with Gaussian-approximated pigment spectra. It uses an **Automated
-> Differentiable Optimizer** to tune the spectral parameters, achieving a Mean
-> Delta-E of **11.77** against Mixbox (vs 14.4 for manual tuning). While not pixel-perfect
-> identical to Mixbox, it produces vibrant, physically plausible mixes (Blue+Yellow=Green)
-> and runs at **0.02ms** per mix using a 256³ LUT.
+> pipeline with Gaussian-approximated pigment spectra. It includes a **Production-Ready
+> Polynomial Mixer** (Experiment A) which achieves a Mean Delta-E of **2.07**
+> against Mixbox and runs at **0.001ms** per mix. While the physics engine remains available
+> for research, the Polynomial model is the recommended solution for production speed and accuracy.
 
 ## Why?
 
@@ -41,15 +40,18 @@ pip install -e ".[dev]"
 ## Quick Start
 
 ```python
-from filament_mixer import FilamentMixer, CMYW_PALETTE
+from filament_mixer import FilamentMixer, PolyMixer, CMYW_PALETTE
 
+# Option 1: Fast Polynomial Mixer (Recommended for Speed & Accuracy)
+poly = PolyMixer.from_cache("lut_poly")
+green = poly.lerp(0, 33, 133,  252, 211, 0,  0.5)
+print(f"Poly Result: RGB{green}")
+
+# Option 2: Physics-based Mixer (Great for custom pigments)
 mixer = FilamentMixer(CMYW_PALETTE)
+green_fm = mixer.lerp(0, 33, 133,  252, 211, 0,  0.5)
 
-# Mix blue + yellow = GREEN (not gray!)
-green = mixer.lerp(0, 33, 133,  252, 211, 0,  0.5)
-print(f"Result: RGB{green}")  # Vibrant green
-
-# Get filament percentages for any target color
+# Get filament percentages (requires physics mixer)
 ratios = mixer.get_filament_ratios(255, 128, 0)  # Orange
 for name, r in zip(["Cyan", "Magenta", "Yellow", "White"], ratios):
     print(f"  {name}: {r * 100:.1f}%")
@@ -83,8 +85,9 @@ print("M164 S0")
 | Approach | Speed | Accuracy (dE vs Mixbox) | Use Case |
 |----------|-------|-------------------------|----------|
 | Naive RGB | Instant | ~35.0 (Varies) | Legacy slicers |
-| This (Optimization) | ~4.8ms | **11.77** | Research / Spectral tuning |
-| This (256³ LUT) | **0.02ms** | **11.77** | Production / Slicer use |
+| FM (Optimization) | ~4.8ms | 11.77 | Research / Spectral tuning |
+| FM (256³ LUT) | 0.02ms | 11.77 | Fast physics-based mixing |
+| **PolyMixer (v2)** | **0.001ms** | **2.07** | **Best Production Accuracy** |
 | Mixbox (Reference) | 0.01ms | 0.00 | Digital painting (Gold standard) |
 
 ## Built-in Palettes
@@ -99,7 +102,7 @@ print("M164 S0")
 
 ### `FilamentMixer(pigments)`
 
-Main class. Initialize with a list of 4 `Pigment` objects (or use a built-in palette).
+Main class for physics-based mixing. Initialize with a list of 4 `Pigment` objects (or use a built-in palette).
 
 | Method | Description |
 |--------|-------------|
@@ -108,6 +111,14 @@ Main class. Initialize with a list of 4 `Pigment` objects (or use a built-in pal
 | `get_filament_ratios(r, g, b)` | Get filament percentages for a target RGB color |
 | `rgb_to_latent(r, g, b)` | Encode RGB to 7-D latent space |
 | `latent_to_rgb(latent)` | Decode latent space back to RGB |
+
+### `PolyMixer`
+Recommended for high-performance pairwise mixing. Loads a pre-trained polynomial regression.
+
+| Method | Description |
+|--------|-------------|
+| `from_cache(path)` | Load the model from a directory (default: `lut_poly`) |
+| `lerp(r1, g1, b1, r2, g2, b2, t)` | Blend two colors using polynomial regression |
 
 ### Supporting classes
 
@@ -134,7 +145,8 @@ src/filament_mixer/
 ├── pigments.py      # Filament spectral definitions & palettes
 ├── unmixer.py       # RGB → pigment concentration solver
 ├── api.py           # FilamentMixer class (main entry point)
-└── lut.py           # Lookup table generator for fast runtime mixing
+├── lut.py           # Lookup table generator for fast runtime mixing
+└── poly_mixer.py    # Polynomial regression mixer (Experiment A)
 ```
 
 ## How It Works
