@@ -187,8 +187,7 @@ src/filament_mixer/
 └── gp_mixer.py      # GPMixer (Gaussian Process regression)
 
 cpp/
-├── filament_mixer.h          # Header-only C++ port of PolyMixer
-├── filament_mixer_data.inc   # Auto-generated polynomial coefficients
+├── filament_mixer.h          # Header-only C++ port of PolyMixer (coefficients inlined)
 ├── example.cpp               # Test/verification program
 └── CMakeLists.txt            # Build configuration
 

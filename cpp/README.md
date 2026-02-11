@@ -72,9 +72,8 @@ c++ -std=c++11 -O2 -o example example.cpp
 
 ### In Your Own Project
 
-Copy these two files into your project:
-- `filament_mixer.h` — the library
-- `filament_mixer_data.inc` — the trained coefficients (included by the header)
+Copy this file into your project:
+- `filament_mixer.h` — the library with trained coefficients inlined
 
 Then `#include "filament_mixer.h"` wherever you need color mixing.
 
@@ -154,7 +153,7 @@ For 7 input variables at degree 4, `PolynomialFeatures` generates 330 terms:
 | 4 | 210 | `r1^4`, `r1^3*g1`, ..., `t^4` |
 | **Total** | **330** | |
 
-Each feature is a monomial `x0^a0 * x1^a1 * ... * x6^a6` where `a0+a1+...+a6 <= 4`. The exponent patterns are stored in the `POWERS[330][7]` table in `filament_mixer_data.inc`.
+Each feature is a monomial `x0^a0 * x1^a1 * ... * x6^a6` where `a0+a1+...+a6 <= 4`. The exponent patterns are stored in the `POWERS[330][7]` table in `filament_mixer.h`.
 
 ### Coefficients
 
@@ -193,21 +192,20 @@ All results are perceptually green — the polynomial successfully captures the 
 
 ## Regenerating Coefficients
 
-If you retrain the Python model (different degree, more samples, etc.), regenerate the C++ data file:
+If you retrain the Python model (different degree, more samples, etc.), regenerate the inlined C++ coefficients:
 
 ```bash
 # From the project root
 python scripts/export_poly_coefficients.py
 ```
 
-This reads `models/poly_model.pkl`, extracts the polynomial powers and regression coefficients, verifies them against sklearn's predictions, and writes `cpp/filament_mixer_data.inc`.
+This reads `models/poly_model.pkl`, extracts the polynomial powers and regression coefficients, verifies them against sklearn's predictions, and updates the auto-generated coefficient block in `cpp/filament_mixer.h`.
 
 ## File Structure
 
 ```
 cpp/
-├── filament_mixer.h          # The library (header-only, ~120 lines)
-├── filament_mixer_data.inc   # Auto-generated coefficients (330x7 powers + 330x3 weights)
+├── filament_mixer.h          # Header-only library with auto-generated coefficients
 ├── example.cpp               # Test program with verification cases
 ├── CMakeLists.txt            # Build configuration
 └── README.md                 # This file
