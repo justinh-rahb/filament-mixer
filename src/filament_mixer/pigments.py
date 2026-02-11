@@ -71,13 +71,13 @@ def create_black_filament() -> Pigment:
 
 
 def create_white_filament() -> Pigment:
-    """White filament (Titanium White equivalent).
+    """White filament (Base material).
 
-    Low absorption, moderate scattering.  Previous S=2.5 overwhelmed
-    other pigments in X+White mixes, desaturating them to flat pastels.
+    High scattering, very low absorption.
+    optimized: K=0.0989, S=0.5
     """
-    K = np.ones(len(CIE_WAVELENGTHS)) * 0.008
-    S = np.ones(len(CIE_WAVELENGTHS)) * 1.2
+    K = np.ones(len(CIE_WAVELENGTHS)) * 0.0989
+    S = np.ones(len(CIE_WAVELENGTHS)) * 0.5
     return Pigment("White", K, S)
 
 

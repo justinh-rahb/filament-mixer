@@ -71,7 +71,7 @@ class RGBUnmixer:
             method=method,
             bounds=bounds,
             constraints=constraints,
-            options={"maxiter": 100, "ftol": 1e-6},
+            options={"maxiter": 50, "ftol": 1e-4},
         )
 
         if not result.success:
