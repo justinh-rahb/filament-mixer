@@ -48,6 +48,14 @@ except ImportError:
     LUTGenerator = None
     FastLUTMixer = None
 
+# Optional Polynomial Mixer support (requires sklearn)
+try:
+    from .poly_mixer import PolyMixer
+    _HAS_POLY = True
+except ImportError:
+    _HAS_POLY = False
+    PolyMixer = None
+
 __all__ = [
     # Core
     "KubelkaMunk",
@@ -79,4 +87,6 @@ __all__ = [
     # LUT (optional)
     "LUTGenerator",
     "FastLUTMixer",
+    # Polynomial Mixer (optional)
+    "PolyMixer",
 ]

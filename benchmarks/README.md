@@ -84,6 +84,33 @@ python benchmarks/visual_compare.py --skip-gradient
 
 ---
 
+### 4. `compare_poly.py` - Polynomial Mixer Deep Analysis
+Focused benchmark for the PolyMixer (Experiment A polynomial regression).
+
+**Prerequisites:**
+```bash
+# Train the polynomial model first
+python scripts/train_poly_model.py
+```
+
+**Usage:**
+```bash
+# Default (10k random pairs)
+python benchmarks/compare_poly.py
+
+# Larger test
+python benchmarks/compare_poly.py --samples 50000
+```
+
+**Tests:**
+- Large-scale Delta-E (10k random pairs vs Mixbox)
+- Boundary stress test (black, white, saturated extremes)
+- Multi-t sweep (accuracy across full 0.0-1.0 range)
+- Speed benchmark (ms/mix comparison)
+- The Green Problem (blue + yellow across all t values)
+
+---
+
 ## Test Color Pairs
 
 All benchmarks use the same 7 test pairs from Mixbox's documentation:

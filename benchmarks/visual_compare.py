@@ -27,6 +27,14 @@ except ImportError:
     HAS_LUT = False
 
 try:
+    from filament_mixer import PolyMixer
+    _poly_mixer = PolyMixer.from_cache("lut_poly")
+    HAS_POLY = True
+except (ImportError, FileNotFoundError):
+    HAS_POLY = False
+    _poly_mixer = None
+
+try:
     import mixbox
     HAS_MIXBOX = True
 except ImportError:
@@ -141,12 +149,15 @@ def generate_comparison_grid(output_path="benchmarks/visual_comparison.png", swa
     else:
         HAS_LUT_LOADED = False
     
+    if HAS_POLY:
+        print("✓ Using PolyMixer")
+    
     if HAS_MIXBOX:
         print("✓ Using Mixbox for comparison")
     
     # Calculate grid dimensions
     num_pairs = len(COLOR_PAIRS)
-    num_methods = 2 + (1 if HAS_LUT_LOADED else 0) + (1 if HAS_MIXBOX else 0)  # Input + RGB + FM + LUT? + Mixbox?
+    num_methods = 2 + (1 if HAS_LUT_LOADED else 0) + (1 if HAS_POLY else 0) + (1 if HAS_MIXBOX else 0)
     
     # Layout: Each row shows: C1 | C2 | RGB | FM | LUT? | Mixbox?
     cell_width = swatch_size
@@ -185,6 +196,8 @@ def generate_comparison_grid(output_path="benchmarks/visual_comparison.png", swa
     headers = ["Color 1", "Color 2", "RGB Lerp", "FilamentMixer"]
     if HAS_LUT_LOADED:
         headers.append("FastLUT")
+    if HAS_POLY:
+        headers.append("PolyMixer")
     if HAS_MIXBOX:
         headers.append("Mixbox")
     
@@ -229,6 +242,13 @@ def generate_comparison_grid(output_path="benchmarks/visual_comparison.png", swa
             lut_result = lut_mixer.lerp(*c1, *c2, 0.5)
             swatch_lut = create_color_swatch(lut_result, cell_width, cell_height)
             canvas.paste(swatch_lut, (x_offset, y_offset))
+            x_offset += cell_width + margin
+        
+        # PolyMixer
+        if HAS_POLY:
+            poly_result = _poly_mixer.lerp(*c1, *c2, 0.5)
+            swatch_poly = create_color_swatch(poly_result, cell_width, cell_height)
+            canvas.paste(swatch_poly, (x_offset, y_offset))
             x_offset += cell_width + margin
         
         # Mixbox
@@ -288,7 +308,7 @@ def generate_gradient_comparison(output_path="benchmarks/gradient_comparison.png
     label_height = 40
     steps = 9  # Number of gradient steps
     
-    num_methods = 2 + (1 if HAS_LUT_LOADED else 0) + (1 if HAS_MIXBOX else 0)
+    num_methods = 2 + (1 if HAS_LUT_LOADED else 0) + (1 if HAS_POLY else 0) + (1 if HAS_MIXBOX else 0)
     canvas_height = len(selected_pairs) * (num_methods * (strip_height + 5) + label_height + margin) + margin
     
     canvas = Image.new('RGB', (strip_width + 2 * margin, canvas_height), (250, 250, 250))
@@ -347,6 +367,20 @@ def generate_gradient_comparison(output_path="benchmarks/gradient_comparison.png
             
             draw.text((margin, y_offset), "FastLUT", fill=(80, 80, 80), font=label_font)
             canvas.paste(lut_strip, (margin, y_offset + 20))
+            y_offset += strip_height + 5
+        
+        # PolyMixer gradient
+        if HAS_POLY:
+            poly_strip = Image.new('RGB', (strip_width, strip_height))
+            for i in range(steps):
+                t = i / (steps - 1)
+                color = _poly_mixer.lerp(*c1, *c2, t)
+                for x in range(i * step_width, min((i + 1) * step_width, strip_width)):
+                    for y in range(strip_height):
+                        poly_strip.putpixel((x, y), color)
+            
+            draw.text((margin, y_offset), "PolyMixer", fill=(80, 80, 80), font=label_font)
+            canvas.paste(poly_strip, (margin, y_offset + 20))
             y_offset += strip_height + 5
         
         # Mixbox gradient

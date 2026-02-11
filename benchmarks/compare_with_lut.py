@@ -29,6 +29,15 @@ except ImportError:
     HAS_LUT = False
     print("Warning: LUT support not available. Install with: pip install -e '.[lut]'")
 
+# Try to import PolyMixer
+try:
+    from filament_mixer import PolyMixer
+    _poly_mixer = PolyMixer.from_cache("lut_poly")
+    HAS_POLY = True
+except (ImportError, FileNotFoundError):
+    HAS_POLY = False
+    _poly_mixer = None
+
 # Try to import Mixbox for head-to-head comparison
 try:
     import mixbox
@@ -175,18 +184,22 @@ def benchmark_mixing(lut_resolution=64):
     else:
         HAS_LUT_LOADED = False
 
-    print("=" * 80)
+    print("=" * 90)
     header = "  BENCHMARK: FilamentMixer"
     if HAS_LUT_LOADED:
         header += " + FastLUT"
+    if HAS_POLY:
+        header += " + PolyMixer"
     header += " vs RGB Lerp"
     if HAS_MIXBOX:
         header += " vs Mixbox"
     print(header)
-    print("=" * 80)
+    print("=" * 90)
 
     if not HAS_MIXBOX:
         print("\n  (Install pymixbox for comparison: pip install pymixbox)")
+    if not HAS_POLY:
+        print("\n  (Train polynomial model: python scripts/train_poly_model.py)")
 
     results = []
 
@@ -200,6 +213,10 @@ def benchmark_mixing(lut_resolution=64):
         if HAS_LUT_LOADED:
             lut_result = lut_mixer.lerp(*c1, *c2, t)
 
+        poly_result = None
+        if HAS_POLY:
+            poly_result = _poly_mixer.lerp(*c1, *c2, t)
+
         mixbox_result = None
         if HAS_MIXBOX:
             mixbox_result = mixbox.lerp(c1, c2, t)
@@ -212,29 +229,32 @@ def benchmark_mixing(lut_resolution=64):
                 "rgb": rgb_result,
                 "filament_mixer": fm_result,
                 "lut": lut_result,
+                "poly": poly_result,
                 "mixbox": mixbox_result,
             }
         )
 
     # Print results table
     print()
-    if HAS_LUT_LOADED and HAS_MIXBOX:
-        print(f"  {'Pair':<22} {'RGB':>14} {'FM':>14} {'LUT':>14} {'Mixbox':>14}")
-        print("  " + "-" * 78)
-    elif HAS_LUT_LOADED:
-        print(f"  {'Pair':<22} {'RGB Lerp':>14} {'FilamentMix':>14} {'FastLUT':>14}")
-        print("  " + "-" * 64)
-    elif HAS_MIXBOX:
-        print(f"  {'Pair':<22} {'RGB':>14} {'FM':>14} {'Mixbox':>14}")
-        print("  " + "-" * 64)
-    else:
-        print(f"  {'Pair':<22} {'RGB Lerp':>14} {'FilamentMix':>14}")
-        print("  " + "-" * 50)
+    cols = ["RGB", "FM"]
+    if HAS_LUT_LOADED:
+        cols.append("LUT")
+    if HAS_POLY:
+        cols.append("Poly")
+    if HAS_MIXBOX:
+        cols.append("Mixbox")
+    header_line = f"  {'Pair':<22}"
+    for col in cols:
+        header_line += f" {col:>14}"
+    print(header_line)
+    print("  " + "-" * (22 + 15 * len(cols)))
 
     for r in results:
         line = f"  {r['name']:<22} {str(r['rgb']):>14} {str(r['filament_mixer']):>14}"
         if HAS_LUT_LOADED:
             line += f" {str(r['lut']):>14}"
+        if HAS_POLY:
+            line += f" {str(r['poly']):>14}"
         if HAS_MIXBOX:
             line += f" {str(r['mixbox']):>14}"
         print(line)
@@ -247,23 +267,27 @@ def benchmark_delta_e(results, has_lut):
     if not HAS_MIXBOX:
         return
 
-    print("\n" + "=" * 80)
+    print("\n" + "=" * 90)
     print("  DELTA-E vs MIXBOX (lower = closer to Mixbox quality)")
-    print("=" * 80)
+    print("=" * 90)
 
+    cols = ["dE(FM)"]
     if has_lut:
-        print(f"\n  {'Pair':<22} {'dE(FM)':>10} {'dE(LUT)':>10} {'dE(RGB)':>10}  {'Winner':>10}")
-        print("  " + "-" * 66)
-    else:
-        print(f"\n  {'Pair':<22} {'dE(FM)':>10} {'dE(RGB)':>10}  {'Winner':>10}")
-        print("  " + "-" * 56)
+        cols.append("dE(LUT)")
+    if HAS_POLY:
+        cols.append("dE(Poly)")
+    cols.append("dE(RGB)")
+    cols.append("Winner")
+    header_line = f"\n  {'Pair':<22}"
+    for col in cols:
+        header_line += f" {col:>10}"
+    print(header_line)
+    print("  " + "-" * (22 + 11 * len(cols)))
 
-    fm_wins = 0
-    lut_wins = 0
-    rgb_wins = 0
-    
     fm_deltas = []
     lut_deltas = []
+    poly_deltas = []
+    wins = {"FM": 0, "LUT": 0, "Poly": 0, "RGB": 0}
 
     for r in results:
         if not r["mixbox"]:
@@ -272,48 +296,49 @@ def benchmark_delta_e(results, has_lut):
         de_fm = delta_e(r["filament_mixer"], r["mixbox"])
         de_rgb = delta_e(r["rgb"], r["mixbox"])
         fm_deltas.append(de_fm)
-        
+
+        candidates = {"FM": de_fm, "RGB": de_rgb}
+
+        de_lut = None
         if has_lut and r["lut"]:
             de_lut = delta_e(r["lut"], r["mixbox"])
             lut_deltas.append(de_lut)
-            
-            winner = "FM" if de_fm <= min(de_lut, de_rgb) else ("LUT" if de_lut <= de_rgb else "RGB")
-            if de_fm <= min(de_lut, de_rgb):
-                fm_wins += 1
-            elif de_lut <= de_rgb:
-                lut_wins += 1
-            else:
-                rgb_wins += 1
-            
-            line = f"  {r['name']:<22} {de_fm:>10.2f} {de_lut:>10.2f} {de_rgb:>10.2f}  {winner:>10}"
-        else:
-            winner = "FM" if de_fm < de_rgb else "RGB"
-            if de_fm < de_rgb:
-                fm_wins += 1
-            else:
-                rgb_wins += 1
-            line = f"  {r['name']:<22} {de_fm:>10.2f} {de_rgb:>10.2f}  {winner:>10}"
-        
+            candidates["LUT"] = de_lut
+
+        de_poly = None
+        if HAS_POLY and r["poly"]:
+            de_poly = delta_e(r["poly"], r["mixbox"])
+            poly_deltas.append(de_poly)
+            candidates["Poly"] = de_poly
+
+        winner = min(candidates, key=candidates.get)
+        wins[winner] = wins.get(winner, 0) + 1
+
+        line = f"  {r['name']:<22} {de_fm:>10.2f}"
+        if de_lut is not None:
+            line += f" {de_lut:>10.2f}"
+        if de_poly is not None:
+            line += f" {de_poly:>10.2f}"
+        line += f" {de_rgb:>10.2f}  {winner:>10}"
         print(line)
 
     print()
-    if has_lut and lut_deltas:
-        print(f"  FM wins:  {fm_wins}/{len(results)} pairs")
-        print(f"  LUT wins: {lut_wins}/{len(results)} pairs")
-        print(f"  RGB wins: {rgb_wins}/{len(results)} pairs")
-        print(f"  Mean Delta-E (FM):  {np.mean(fm_deltas):.2f}")
-        print(f"  Mean Delta-E (LUT): {np.mean(lut_deltas):.2f}")
-    else:
-        print(f"  FM closer to Mixbox than RGB: {fm_wins}/{len(results)} pairs")
-        print(f"  Mean Delta-E (FM vs Mixbox): {np.mean(fm_deltas):.2f}")
+    for method, count in wins.items():
+        if count > 0:
+            print(f"  {method} wins: {count}/{len(results)} pairs")
+    print(f"  Mean Delta-E (FM):   {np.mean(fm_deltas):.2f}")
+    if lut_deltas:
+        print(f"  Mean Delta-E (LUT):  {np.mean(lut_deltas):.2f}")
+    if poly_deltas:
+        print(f"  Mean Delta-E (Poly): {np.mean(poly_deltas):.2f}")
     print("  (< 2.0 = imperceptible, < 5.0 = minor, < 10.0 = noticeable)")
 
 
 def benchmark_speed(has_lut, lut_resolution=64):
     """Measure runtime performance."""
-    print("\n" + "=" * 80)
+    print("\n" + "=" * 90)
     print("  SPEED")
-    print("=" * 80)
+    print("=" * 90)
     print()
 
     mixer = FilamentMixer(CMYW_PALETTE)
@@ -325,13 +350,14 @@ def benchmark_speed(has_lut, lut_resolution=64):
     for _ in range(n):
         _ = rgb_lerp(c1, c2, 0.5)
     rgb_time = (time.time() - start) * 1000 / n
-    print(f"  RGB lerp():                {rgb_time:.2f} ms")
+    print(f"  RGB lerp():                {rgb_time:.4f} ms")
 
     # FilamentMixer
+    n_fm = 100
     start = time.time()
-    for _ in range(n):
+    for _ in range(n_fm):
         _ = mixer.lerp(*c1, *c2, 0.5)
-    fm_time = (time.time() - start) * 1000 / n
+    fm_time = (time.time() - start) * 1000 / n_fm
     print(f"  FilamentMixer.lerp():      {fm_time:.2f} ms")
 
     # LUT mixer
@@ -342,9 +368,18 @@ def benchmark_speed(has_lut, lut_resolution=64):
             for _ in range(n):
                 _ = lut_mixer.lerp(*c1, *c2, 0.5)
             lut_time = (time.time() - start) * 1000 / n
-            print(f"  FastLUTMixer.lerp():       {lut_time:.2f} ms  ({fm_time/lut_time:.0f}x faster)")
+            print(f"  FastLUTMixer.lerp():       {lut_time:.4f} ms  ({fm_time/lut_time:.0f}x faster than FM)")
         except FileNotFoundError:
             pass
+
+    # PolyMixer
+    if HAS_POLY:
+        _poly_mixer.lerp(*c1, *c2, 0.5)  # warm up
+        start = time.time()
+        for _ in range(n):
+            _ = _poly_mixer.lerp(*c1, *c2, 0.5)
+        poly_time = (time.time() - start) * 1000 / n
+        print(f"  PolyMixer.lerp():          {poly_time:.4f} ms  ({fm_time/poly_time:.0f}x faster than FM)")
 
     # Mixbox
     if HAS_MIXBOX:
@@ -352,12 +387,7 @@ def benchmark_speed(has_lut, lut_resolution=64):
         for _ in range(n):
             _ = mixbox.lerp(c1, c2, 0.5)
         mx_time = (time.time() - start) * 1000 / n
-        print(f"  mixbox.lerp():             {mx_time:.2f} ms")
-
-    if not has_lut:
-        print("\n  (FastLUTMixer uses precomputed LUT — instant lookups)")
-    print("\n  Note: FilamentMixer and FastLUT solve optimization/lookup at runtime,")
-    print("        while Mixbox uses a precomputed LUT")
+        print(f"  mixbox.lerp():             {mx_time:.4f} ms")
 
 
 def main():

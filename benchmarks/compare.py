@@ -20,6 +20,15 @@ from pathlib import Path
 
 from filament_mixer import FilamentMixer, CMYW_PALETTE
 
+# Try to import PolyMixer
+try:
+    from filament_mixer import PolyMixer
+    poly_mixer = PolyMixer.from_cache("lut_poly")
+    HAS_POLY = True
+except (ImportError, FileNotFoundError):
+    HAS_POLY = False
+    poly_mixer = None
+
 # Try to import Mixbox for head-to-head comparison
 try:
     import mixbox
@@ -155,12 +164,20 @@ def benchmark_mixing():
     """Run the head-to-head comparison."""
     mixer = FilamentMixer(CMYW_PALETTE)
 
-    print("=" * 74)
-    print("  BENCHMARK: FilamentMixer vs RGB Lerp" + (" vs Mixbox" if HAS_MIXBOX else ""))
-    print("=" * 74)
+    print("=" * 80)
+    header = "  BENCHMARK: FilamentMixer"
+    if HAS_POLY:
+        header += " + PolyMixer"
+    header += " vs RGB Lerp"
+    if HAS_MIXBOX:
+        header += " vs Mixbox"
+    print(header)
+    print("=" * 80)
 
     if not HAS_MIXBOX:
         print("\n  (Install pymixbox for head-to-head comparison: pip install pymixbox)")
+    if not HAS_POLY:
+        print("\n  (Train polynomial model: python scripts/train_poly_model.py)")
 
     results = []
 
@@ -169,6 +186,10 @@ def benchmark_mixing():
 
         rgb_result = rgb_lerp(c1, c2, t)
         fm_result = mixer.lerp(*c1, *c2, t)
+
+        poly_result = None
+        if HAS_POLY:
+            poly_result = poly_mixer.lerp(*c1, *c2, t)
 
         mixbox_result = None
         if HAS_MIXBOX:
@@ -181,21 +202,28 @@ def benchmark_mixing():
                 "c2": c2,
                 "rgb": rgb_result,
                 "filament_mixer": fm_result,
+                "poly": poly_result,
                 "mixbox": mixbox_result,
             }
         )
 
     # Print results table
     print()
+    cols = ["RGB Lerp", "FM"]
+    if HAS_POLY:
+        cols.append("Poly")
     if HAS_MIXBOX:
-        print(f"  {'Pair':<24} {'RGB Lerp':>14} {'FilamentMixer':>14} {'Mixbox':>14}")
-        print("  " + "-" * 68)
-    else:
-        print(f"  {'Pair':<24} {'RGB Lerp':>14} {'FilamentMixer':>14}")
-        print("  " + "-" * 54)
+        cols.append("Mixbox")
+    header_line = f"  {'Pair':<22}"
+    for col in cols:
+        header_line += f" {col:>14}"
+    print(header_line)
+    print("  " + "-" * (22 + 15 * len(cols)))
 
     for r in results:
-        line = f"  {r['name']:<24} {str(r['rgb']):>14} {str(r['filament_mixer']):>14}"
+        line = f"  {r['name']:<22} {str(r['rgb']):>14} {str(r['filament_mixer']):>14}"
+        if HAS_POLY:
+            line += f" {str(r['poly']):>14}"
         if HAS_MIXBOX:
             line += f" {str(r['mixbox']):>14}"
         print(line)
@@ -205,18 +233,21 @@ def benchmark_mixing():
 
 def benchmark_saturation(results):
     """Compare saturation retention — the core quality metric."""
-    print("\n" + "=" * 74)
+    print("\n" + "=" * 80)
     print("  SATURATION RETENTION (higher = more vivid, less muddy)")
-    print("=" * 74)
+    print("=" * 80)
 
+    cols = ["RGB Lerp", "FM"]
+    if HAS_POLY:
+        cols.append("Poly")
     if HAS_MIXBOX:
-        print(
-            f"\n  {'Pair':<24} {'RGB Lerp':>10} {'FM':>10} {'Mixbox':>10}  {'FM vs RGB':>10}"
-        )
-        print("  " + "-" * 68)
-    else:
-        print(f"\n  {'Pair':<24} {'RGB Lerp':>10} {'FM':>10}  {'FM vs RGB':>10}")
-        print("  " + "-" * 56)
+        cols.append("Mixbox")
+    cols.append("FM vs RGB")
+    header_line = f"\n  {'Pair':<22}"
+    for col in cols:
+        header_line += f" {col:>10}"
+    print(header_line)
+    print("  " + "-" * (22 + 11 * len(cols)))
 
     fm_wins = 0
     for r in results:
@@ -225,7 +256,10 @@ def benchmark_saturation(results):
 
         improvement = ((sat_fm - sat_rgb) / max(sat_rgb, 0.001)) * 100
 
-        line = f"  {r['name']:<24} {sat_rgb:>10.3f} {sat_fm:>10.3f}"
+        line = f"  {r['name']:<22} {sat_rgb:>10.3f} {sat_fm:>10.3f}"
+        if HAS_POLY and r["poly"]:
+            sat_poly = saturation_of(*r["poly"])
+            line += f" {sat_poly:>10.3f}"
         if HAS_MIXBOX and r["mixbox"]:
             sat_mx = saturation_of(*r["mixbox"])
             line += f" {sat_mx:>10.3f}"
@@ -240,16 +274,21 @@ def benchmark_saturation(results):
 
 def benchmark_hue_accuracy(results):
     """Check that midpoint hues make physical sense."""
-    print("\n" + "=" * 74)
+    print("\n" + "=" * 80)
     print("  HUE ACCURACY (does blue+yellow actually make green?)")
-    print("=" * 74)
+    print("=" * 80)
 
+    cols = ["RGB hue", "FM hue"]
+    if HAS_POLY:
+        cols.append("Poly")
     if HAS_MIXBOX:
-        print(f"\n  {'Pair':<24} {'RGB hue':>8} {'FM hue':>8} {'Mixbox':>8}  {'Expected':>16}")
-        print("  " + "-" * 68)
-    else:
-        print(f"\n  {'Pair':<24} {'RGB hue':>8} {'FM hue':>8}  {'Expected':>16}")
-        print("  " + "-" * 58)
+        cols.append("Mixbox")
+    cols.append("Expected")
+    header_line = f"\n  {'Pair':<22}"
+    for col in cols:
+        header_line += f" {col:>10}"
+    print(header_line)
+    print("  " + "-" * (22 + 11 * len(cols)))
 
     for r in results:
         hue_rgb = hue_of(*r["rgb"])
@@ -258,10 +297,13 @@ def benchmark_hue_accuracy(results):
         expected = EXPECTED_HUES.get(r["name"], None)
         exp_str = f"{expected[0]}-{expected[1]}°" if expected else "—"
 
-        line = f"  {r['name']:<24} {hue_rgb:>7.1f}° {hue_fm:>7.1f}°"
+        line = f"  {r['name']:<22} {hue_rgb:>9.1f}° {hue_fm:>9.1f}°"
+        if HAS_POLY and r["poly"]:
+            hue_poly = hue_of(*r["poly"])
+            line += f" {hue_poly:>9.1f}°"
         if HAS_MIXBOX and r["mixbox"]:
             hue_mx = hue_of(*r["mixbox"])
-            line += f" {hue_mx:>7.1f}°"
+            line += f" {hue_mx:>9.1f}°"
         line += f"  {exp_str:>16}"
         print(line)
 
@@ -271,9 +313,9 @@ def benchmark_hue_accuracy(results):
             rgb_in = lo <= hue_rgb <= hi
             fm_in = lo <= hue_fm <= hi
             if fm_in and not rgb_in:
-                print(f"  {'':>24} ^ RGB is NOT green, FM IS green")
+                print(f"  {'':>22} ^ RGB is NOT green, FM IS green")
             elif fm_in and rgb_in:
-                print(f"  {'':>24} ^ Both produce green hues")
+                print(f"  {'':>22} ^ Both produce green hues")
 
 
 def benchmark_delta_e_vs_mixbox(results):
@@ -281,30 +323,60 @@ def benchmark_delta_e_vs_mixbox(results):
     if not HAS_MIXBOX:
         return
 
-    print("\n" + "=" * 74)
+    print("\n" + "=" * 80)
     print("  DELTA-E vs MIXBOX (lower = closer to Mixbox quality)")
-    print("=" * 74)
-    print(f"\n  {'Pair':<24} {'dE(FM,Mixbox)':>14} {'dE(RGB,Mixbox)':>15}  {'Winner':>10}")
-    print("  " + "-" * 68)
+    print("=" * 80)
+
+    cols = ["dE(FM)"]
+    if HAS_POLY:
+        cols.append("dE(Poly)")
+    cols.append("dE(RGB)")
+    cols.append("Winner")
+    header_line = f"\n  {'Pair':<22}"
+    for col in cols:
+        header_line += f" {col:>10}"
+    print(header_line)
+    print("  " + "-" * (22 + 11 * len(cols)))
 
     fm_closer = 0
-    delta_es = []
+    poly_closer = 0
+    fm_deltas = []
+    poly_deltas = []
     for r in results:
         if r["mixbox"] is None:
             continue
         de_fm = delta_e(r["filament_mixer"], r["mixbox"])
         de_rgb = delta_e(r["rgb"], r["mixbox"])
-        delta_es.append(de_fm)
+        fm_deltas.append(de_fm)
 
-        winner = "FM" if de_fm < de_rgb else "RGB" if de_rgb < de_fm else "tie"
+        de_poly = None
+        if HAS_POLY and r["poly"]:
+            de_poly = delta_e(r["poly"], r["mixbox"])
+            poly_deltas.append(de_poly)
+
+        # Determine winner
+        candidates = {"FM": de_fm, "RGB": de_rgb}
+        if de_poly is not None:
+            candidates["Poly"] = de_poly
+        winner = min(candidates, key=candidates.get)
+
         if de_fm < de_rgb:
             fm_closer += 1
+        if de_poly is not None and de_poly < de_rgb:
+            poly_closer += 1
 
-        print(f"  {r['name']:<24} {de_fm:>14.2f} {de_rgb:>15.2f}  {winner:>10}")
+        line = f"  {r['name']:<22} {de_fm:>10.2f}"
+        if de_poly is not None:
+            line += f" {de_poly:>10.2f}"
+        line += f" {de_rgb:>10.2f}  {winner:>10}"
+        print(line)
 
-    avg_de = np.mean(delta_es) if delta_es else 0
-    print(f"\n  FM closer to Mixbox than RGB: {fm_closer}/{len(results)} pairs")
-    print(f"  Mean Delta-E (FM vs Mixbox): {avg_de:.2f}")
+    print()
+    print(f"  FM closer to Mixbox than RGB: {fm_closer}/{len(results)} pairs")
+    print(f"  Mean Delta-E (FM vs Mixbox): {np.mean(fm_deltas):.2f}")
+    if poly_deltas:
+        print(f"  Poly closer to Mixbox than RGB: {poly_closer}/{len(results)} pairs")
+        print(f"  Mean Delta-E (Poly vs Mixbox): {np.mean(poly_deltas):.2f}")
     print(f"  (< 2.0 = imperceptible, < 5.0 = minor, < 10.0 = noticeable)")
 
 
@@ -341,19 +413,20 @@ def benchmark_roundtrip():
 
 def benchmark_speed():
     """Measure timing for key operations."""
-    print("\n" + "=" * 74)
+    print("\n" + "=" * 80)
     print("  SPEED")
-    print("=" * 74)
+    print("=" * 80)
 
     mixer = FilamentMixer(CMYW_PALETTE)
+    c1, c2 = (0, 33, 133), (252, 211, 0)
 
     # Warm up
-    mixer.lerp(0, 33, 133, 252, 211, 0, 0.5)
+    mixer.lerp(*c1, *c2, 0.5)
 
     n = 20
     t0 = time.perf_counter()
     for _ in range(n):
-        mixer.lerp(0, 33, 133, 252, 211, 0, 0.5)
+        mixer.lerp(*c1, *c2, 0.5)
     t_lerp = (time.perf_counter() - t0) / n
 
     t0 = time.perf_counter()
@@ -361,16 +434,24 @@ def benchmark_speed():
         mixer.get_filament_ratios(128, 200, 80)
     t_ratios = (time.perf_counter() - t0) / n
 
-    print(f"\n  lerp():               {t_lerp*1000:>8.1f} ms")
-    print(f"  get_filament_ratios(): {t_ratios*1000:>7.1f} ms")
+    print(f"\n  FM lerp():               {t_lerp*1000:>8.2f} ms")
+    print(f"  FM get_filament_ratios(): {t_ratios*1000:>7.2f} ms")
+
+    if HAS_POLY:
+        n_poly = 1000
+        poly_mixer.lerp(*c1, *c2, 0.5)  # warm up
+        t0 = time.perf_counter()
+        for _ in range(n_poly):
+            poly_mixer.lerp(*c1, *c2, 0.5)
+        t_poly = (time.perf_counter() - t0) / n_poly
+        print(f"  PolyMixer.lerp():        {t_poly*1000:>8.4f} ms  ({t_lerp/t_poly:.0f}x faster than FM)")
 
     if HAS_MIXBOX:
         t0 = time.perf_counter()
         for _ in range(n):
-            mixbox.lerp((0, 33, 133), (252, 211, 0), 0.5)
+            mixbox.lerp(c1, c2, 0.5)
         t_mb = (time.perf_counter() - t0) / n
-        print(f"  mixbox.lerp():        {t_mb*1000:>8.1f} ms")
-        print(f"\n  (Mixbox uses a precomputed LUT — we solve optimization at runtime)")
+        print(f"  mixbox.lerp():           {t_mb*1000:>8.4f} ms")
 
 
 def generate_visual(results):
