@@ -4,7 +4,7 @@
 - **Physics Core:** Implementation of Kubelka-Munk theory (Equations 1-7) is solid and verified.
 - **Performance:** A 256³ high-resolution LUT has been generated and integrated. Speed is now **~0.02ms** per mixing operation (347x speedup).
 - **Benchmarks:** Official `pymixbox` is integrated.
-- **Accuracy:** Mean Delta-E vs Mixbox is **12.87** (down from 14.4). Blue+Yellow saturation is significantly improved (dE 29.79).
+- **Accuracy:** Mean Delta-E vs Mixbox is **11.77**. Automated optimization successfully tuned the pigment parameters (specifically White) to maximize fidelity.
 
 ## 🚫 Failed Experiments (Do Not Repeat)
 - **Narrowing Yellow Peak (< 45nm width):** Attempted to reduce green overlap by narrowing Yellow's blue absorption. Resulted in **Blue leakage** into the green spectrum, worsening the mix (dE spiked to ~35).

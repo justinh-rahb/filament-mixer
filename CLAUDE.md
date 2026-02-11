@@ -14,9 +14,11 @@ FilamentMixer implements physically-accurate color mixing for multi-material 3D 
 src/filament_mixer/
 ├── km_core.py       # Kubelka-Munk physics engine (K-M equations 1-7)
 ├── pigments.py      # Spectral definitions for CMYW/CMYK/RYBW palettes
-├── unmixer.py       # Inverse solver (RGB → pigment concentrations)
+├── unmixer.py       # RGB → pigment concentration solver
 ├── api.py           # FilamentMixer class (main entry point)
-└── lut.py           # Look-up table generator for fast runtime mixing
+├── lut.py           # Lookup table generator for fast runtime mixing
+└── scripts/
+    └── optimize_pigments.py # Differentiable spectral optimizer
 ```
 
 ### Key Classes
@@ -84,9 +86,9 @@ What makes Mixbox better than this implementation:
 
 | Feature | This Project | Mixbox |
 |---------|-------------|---------|
-| Pigment Data | Gaussian approximations | Measured from real paint samples |
-| Optimization | None (hand-tuned) | Neural network trained encoder/decoder |
-| Runtime Performance | SLSQP solver (~10-50ms) | LUT lookup (~0.1ms) |
+| Pigment Data | Gaussian approximations (Automated) | Measured from real paint samples |
+| Optimization | Differentiable (scipy.optimize) | Neural network trained encoder/decoder |
+| Runtime Performance | SLSQP solver (~5ms) | LUT lookup (~0.1ms) |
 | Gamut Coverage | RGB residual for out-of-gamut | Perceptually optimized across full gamut |
 | License | MIT (commercial friendly) | CC BY-NC 4.0 (non-commercial only) |
 
@@ -129,6 +131,10 @@ S = constant_scattering
 **Magenta filament** (lines 42-47):
 - **Dual-peak strategy:** Narrow peak at 530nm (don't leak into blue) + wider peak at 555nm (extend absorption toward yellow-green)
 - **Why asymmetric:** Preserves blue purity in Red+White while fully eating green for Red+Cyan → Purple
+
+**Automated Optimization (White Pigment)**:
+- **Discovery:** The optimizer (`scripts/optimize_pigments.py`) found that a much darker/clearer White (`K=0.099`, `S=0.5`) matched Mixbox better than the manual guess (`K=0.008`, `S=1.2`).
+- **Impact:** Massive improvement in Red+White mixing accuracy (dE 14.2 → 7.8) without degrading other tints.
 
 ## API Usage
 
