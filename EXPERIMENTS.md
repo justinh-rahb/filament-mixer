@@ -73,3 +73,31 @@ We are exploring three distinct approaches to improve color mixing accuracy (spe
 **Conclusion**: GP is extremely accurate and provides **uncertainty estimates**, which could be huge for detecting "out of gamut" mixes. At low N (1000), it slightly lags behind the Polynomial fit (dE 2.2 vs 3.3? Wait, 2.26 is BETTER than 3.32).
 *Correction*: 2.26 is **better** than 3.32. The GP wins on accuracy per sample.
 
+---
+
+## Experiment D: Polynomial with Logistic Tapering
+
+**Hypothesis**: The standard polynomial fit (Exp A) struggles at the boundaries (0/255) and requires hard clamping. By fitting the polynomial to the *logit* of the color values, we enforce a natural S-curve constraint, potentially improving accuracy near black/white/saturated primaries.
+
+-   **Model**: `X -> Poly3 -> Linear -> Sigmoid -> Y`.
+-   **Math**: Fit $f(X) \approx \ln(\frac{y}{255-y})$.
+-   **Pros**:
+    -   **Bounded**: Output is mathematically guaranteed to be in $(0, 255)$.
+    -   **Smooth**: No hard "clipping" artifacts.
+-   **Cons**:
+    -   **Numerical Stability**: Logit is undefined at exact 0 or 255 (requires epsilon smoothing).
+
+**Implementation**: `scripts/experiment_logit_poly.py`
+
+### Results (2026-02-10)
+- **Mean Delta-E**: **5.43** (Worse than Standard Poly's 3.32).
+- **Speed**: **0.0007ms** (Ultra fast).
+- **Blue + Yellow Test**:
+    - Predicted: `[43, 153, 50]` (Green).
+    - Mixbox Ref: `[41, 130, 57]`
+    - **Result**: Good green, but overall accuracy across the gamut degraded.
+
+**Conclusion**: The logit transform seemingly introduces complex non-linearities that the 3rd-degree polynomial struggles to fit. The standard polynomial (Experiment A) is superior.
+
+
+
