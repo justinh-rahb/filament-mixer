@@ -112,6 +112,18 @@ def main():
     print(f"  Input 2: {c2}")
     print(f"  Prediction: {list(pred_int)} (Green?)")
     print(f"  Mixbox Ref: {list(truth)}")
+    print("\n--- Edge Case Stress Test (Raw Predictions) ---")
+    corners = [
+        ([0, 0, 0], [0, 0, 0], "Black+Black"),
+        ([255, 255, 255], [255, 255, 255], "White+White"),
+        ([255, 0, 0], [0, 255, 0], "Red+Green"),
+        ([0, 0, 255], [255, 255, 0], "Blue+Yellow"),
+    ]
+    
+    for c1, c2, name in corners:
+        X_case = np.array([c1 + c2])
+        raw_pred = model.predict(X_case)[0]
+        print(f"{name}: {raw_pred} -> Clamped: {np.clip(raw_pred, 0, 255).astype(int)}")
 
 if __name__ == "__main__":
     main()
