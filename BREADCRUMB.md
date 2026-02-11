@@ -2,18 +2,18 @@
 
 ## Current State (2026-02-10)
 - **Physics Core:** Implementation of Kubelka-Munk theory (Equations 1-7) is solid and verified.
-- **Performance:** A 256³ high-resolution LUT has been generated and integrated. Speed is now **~0.02ms** per mixing operation (400x speedup vs math-on-the-fly).
-- **Benchmarks:** Official `pymixbox` is installed and integrated into the bench suite.
-- **Accuracy baseline:** Mean Delta-E vs Mixbox is **14.4**. We match the "hue" (Blue+Yellow=Green) but lag behind on "saturation/vibrancy".
+- **Performance:** A 256³ high-resolution LUT has been generated and integrated. Speed is now **~0.02ms** per mixing operation (347x speedup).
+- **Benchmarks:** Official `pymixbox` is integrated.
+- **Accuracy:** Mean Delta-E vs Mixbox is **12.87** (down from 14.4). Blue+Yellow saturation is significantly improved (dE 29.79).
+
+## 🚫 Failed Experiments (Do Not Repeat)
+- **Narrowing Yellow Peak (< 45nm width):** Attempted to reduce green overlap by narrowing Yellow's blue absorption. Resulted in **Blue leakage** into the green spectrum, worsening the mix (dE spiked to ~35).
+- **Aggressive Spectral Separation:** Attempted to shift Cyan (> 600nm) and Yellow (< 440nm) apart to avoid any overlap. Resulted in a **spectral "hole"** (500-550nm passband too wide), causing muddy/greyish mixes instead of vibrant greens.
+- **Conclusion:** The optimal balance is **Cyan** with narrow peaks (Red=640/45, Orange=600/20) and **Yellow** with standard bandwidth (Blue=450/45).
 
 ## Knowledge Base
 - **[`CLAUDE.md`](file:///Users/justinh/Development/github.com/justinh-rahb/filament-mixer/CLAUDE.md):** Full technical architecture, math details, and API guide.
 - **[`walkthrough.md`](file:///Users/justinh/.gemini/antigravity/brain/7f05c618-69be-4a4b-81d8-a005d536b754/walkthrough.md):** Visual proof, recent benchmark analysis, and historical tuning context.
-
-## 🚩 Priority Next Steps
-1. **Saturation Tuning:** Narrow the Gaussian peaks for Cyan and Magenta in `src/filament_mixer/pigments.py`. Mixbox's green is significantly more vibrant; our model is currently too "safe/absorbing".
-2. **G-Code Integration:** Develop the script to apply spectral mixing ratios to real-world `M163` (Prusa/Marlin multi-extruder) commands.
-3. **Material System:** Implement `materials.json` to allow switching between filament brands with different spectral properties.
 
 ## Workspace Info
 - **Environment:** `venv` is set up with all dependencies (numpy, scipy, matplotlib, pillow, pymixbox).
