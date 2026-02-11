@@ -99,7 +99,7 @@ print("M164 S0")
 | Approach | Speed | Accuracy (dE vs Mixbox) | Use Case |
 |----------|-------|-------------------------|----------|
 | Naive RGB Lerp | Instant | ~35.0 (Varies) | Legacy slicers |
-| **PolyMixer (This)** | **0.001ms** | **2.07** 🚀 | **Production / Fastest** |
+| **PolyMixer (This)** | **0.001ms** | **2.07** 🚀 | **Production / Fastest** ([C++ port](cpp/) available) |
 | **GPMixer (This)** | **0.018ms** | **1.79** 🏆 | **Production / Most Accurate** |
 | FastLUT 256³ (This) | 0.02ms | 11.77 | Pre-cached mixing |
 | K-M Physics (This) | ~4.8ms | 11.77 | Research / Spectral tuning |
@@ -160,6 +160,19 @@ python examples/visual_demo.py
 python examples/slicer_demo.py
 ```
 
+## C++ Port
+
+A header-only C++ port of PolyMixer is available in [`cpp/`](cpp/). Drop-in replacement for `mixbox_lerp` — no dependencies, no model files, just `#include` and go.
+
+```cpp
+#include "filament_mixer.h"
+
+auto rgb = filament_mixer::lerp(0, 33, 133,  252, 211, 0,  0.5f);
+// rgb = {47, 141, 56}  (green, not gray)
+```
+
+See [`cpp/README.md`](cpp/README.md) for full API docs, build instructions, and accuracy benchmarks.
+
 ## Project Structure
 
 ```
@@ -173,9 +186,16 @@ src/filament_mixer/
 ├── poly_mixer.py    # PolyMixer (polynomial regression)
 └── gp_mixer.py      # GPMixer (Gaussian Process regression)
 
+cpp/
+├── filament_mixer.h          # Header-only C++ port of PolyMixer
+├── filament_mixer_data.inc   # Auto-generated polynomial coefficients
+├── example.cpp               # Test/verification program
+└── CMakeLists.txt            # Build configuration
+
 scripts/
-├── train_poly_model.py  # Train PolyMixer on Mixbox ground truth
-└── train_gp_model.py    # Train GPMixer on Mixbox ground truth
+├── train_poly_model.py       # Train PolyMixer on Mixbox ground truth
+├── train_gp_model.py         # Train GPMixer on Mixbox ground truth
+└── export_poly_coefficients.py  # Export model to C++ header
 
 models/
 ├── poly_model.pkl       # Pre-trained PolyMixer model (11KB)
