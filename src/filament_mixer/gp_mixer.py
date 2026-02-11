@@ -30,12 +30,12 @@ class GPMixer:
         
         Args:
             model_path: Path to the pickled GP model file.
-                       If None, looks for lut_gp/gp_model.pkl
+                       If None, looks for models/gp_model.pkl
         """
         if model_path is None:
-            # Default to lut_gp directory
+            # Default to models directory
             base_path = Path(__file__).parent.parent.parent
-            model_path = base_path / "lut_gp" / "gp_model.pkl"
+            model_path = base_path / "models" / "gp_model.pkl"
         
         model_path = Path(model_path)
         
@@ -87,7 +87,7 @@ class GPMixer:
         return tuple(rgb_out)
     
     @classmethod
-    def from_cache(cls, cache_dir: str = "lut_gp"):
+    def from_cache(cls, cache_dir: str = "models"):
         """
         Load GP model from a cache directory.
         

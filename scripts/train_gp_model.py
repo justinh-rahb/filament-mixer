@@ -136,7 +136,7 @@ def main():
     
     # Configuration
     N_TRAIN = 2000  # More samples = better accuracy, but slower training (O(N³))
-    OUTPUT_DIR = Path("lut_gp")
+    OUTPUT_DIR = Path("models")
     MODEL_FILE = "gp_model.pkl"
     
     print("=" * 60)

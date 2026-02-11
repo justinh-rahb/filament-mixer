@@ -28,6 +28,7 @@ Thumbs.db
 # Project-specific
 cache/
 *.pkl
-!lut_poly/poly_model.pkl
+!models/poly_model.pkl
+!models/gp_model.pkl
 *.lut
 #benchmarks/*.png

@@ -23,7 +23,7 @@ from filament_mixer import FilamentMixer, CMYW_PALETTE
 # Try to import PolyMixer
 try:
     from filament_mixer import PolyMixer
-    poly_mixer = PolyMixer.from_cache("lut_poly")
+    poly_mixer = PolyMixer.from_cache("models")
     HAS_POLY = True
 except (ImportError, FileNotFoundError):
     HAS_POLY = False
@@ -32,7 +32,7 @@ except (ImportError, FileNotFoundError):
 # Try to import GPMixer
 try:
     from filament_mixer import GPMixer
-    gp_mixer = GPMixer.from_cache("lut_gp")
+    gp_mixer = GPMixer.from_cache("models")
     HAS_GP = True
 except (ImportError, FileNotFoundError):
     HAS_GP = False

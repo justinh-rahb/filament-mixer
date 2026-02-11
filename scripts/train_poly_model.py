@@ -3,7 +3,7 @@
 Train Polynomial Mixer Model (Experiment A)
 
 Trains a degree-3 polynomial regression on Mixbox ground truth data
-and saves the model to lut_poly/poly_model.pkl.
+and saves the model to models/poly_model.pkl.
 
 Usage:
     python scripts/train_poly_model.py
@@ -93,8 +93,8 @@ def main():
     parser.add_argument(
         "--output-dir",
         type=str,
-        default="lut_poly",
-        help="Output directory for model pickle (default: lut_poly)",
+        default="models",
+        help="Output directory for model pickle (default: models)",
     )
     args = parser.parse_args()
 

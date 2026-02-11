@@ -46,12 +46,12 @@ pip install -e ".[dev]"
 from filament_mixer import PolyMixer, GPMixer, FilamentMixer, CMYW_PALETTE
 
 # Option 1: Polynomial Mixer (Fastest - 0.001ms per mix, dE 2.07)
-poly = PolyMixer.from_cache("lut_poly")
+poly = PolyMixer.from_cache("models")
 green = poly.lerp(0, 33, 133,  252, 211, 0,  0.5)
 print(f"Poly Result: RGB{green}")
 
 # Option 2: Gaussian Process Mixer (Most Accurate - 0.018ms per mix, dE 1.79)
-gp = GPMixer.from_cache("lut_gp")
+gp = GPMixer.from_cache("models")
 green = gp.lerp(0, 33, 133,  252, 211, 0,  0.5)
 print(f"GP Result: RGB{green}")  # Vibrant green: (47, 139, 49)
 
@@ -82,9 +82,9 @@ PolyMixer or GPMixer for best accuracy and speed:
 ```python
 from filament_mixer import PolyMixer  # or GPMixer
 
-mixer = PolyMixer.from_cache("lut_poly")  # Fastest (0.001ms)
+mixer = PolyMixer.from_cache("models")  # Fastest (0.001ms)
 # OR
-# mixer = GPMixer.from_cache("lut_gp")    # Most accurate (0.018ms)
+# mixer = GPMixer.from_cache("models")    # Most accurate (0.018ms)
 mixer = FilamentMixer(CMYW_PALETTE)
 ratios = mixer.get_filament_ratios(128, 200, 80)
 
@@ -98,14 +98,6 @@ print("M164 S0")
 
 | Approach | Speed | Accuracy (dE vs Mixbox) | Use Case |
 |----------|-------|-------------------------|----------|
-<<<<<<< HEAD
-| Naive RGB | Instant | ~35.0 (Varies) | Legacy slicers |
-| FM (Optimization) | ~4.8ms | 11.77 | Research / Spectral tuning |
-| FM (256³ LUT) | 0.02ms | 11.77 | Fast physics-based mixing |
-| **PolyMixer (v2)** | **0.001ms** | **2.07** | **Best Production Accuracy** |
-| Mixbox (Reference) | 0.01ms | 0.00 | Digital painting (Gold standard) |
-=======
-| Naive RGB Lerp | Instant | ~35.0 (Varies) | Legacy slicers |
 | Naive RGB Lerp | Instant | ~35.0 (Varies) | Legacy slicers |
 | **PolyMixer (This)** | **0.001ms** | **2.07** 🚀 | **Production / Fastest** |
 | **GPMixer (This)** | **0.018ms** | **1.79** 🏆 | **Production / Most Accurate** |
@@ -114,7 +106,7 @@ print("M164 S0")
 | Mixbox (Reference) | 0.01ms | 0.00 | Digital painting (Commercial license) |
 
 **PolyMixer** uses polynomial regression trained on Mixbox samples for ultra-fast mixing.  
-**GPMixer** uses Gaussian Process regression for near-perfect accuracy at production speeds.low, Blue, White | Traditional art mixing |
+**GPMixer** uses Gaussian Process regression for near-perfect accuracy at production speeds.
 
 ## API Reference
 
@@ -135,7 +127,7 @@ Recommended for high-performance pairwise mixing. Loads a pre-trained polynomial
 
 | Method | Description |
 |--------|-------------|
-| `from_cache(path)` | Load the model from a directory (default: `lut_poly`) |
+| `from_cache(path)` | Load the model from a directory (default: `models`) |
 | `lerp(r1, g1, b1, r2, g2, b2, t)` | Blend two colors using polynomial regression |
 
 ### Supporting classes
@@ -151,7 +143,7 @@ Recommended for high-performance pairwise mixing. Loads a pre-trained polynomial
 | Method | Description |
 |--------|-------------|
 | `lerp(r1, g1, b1, r2, g2, b2, t)` | Mix two colors (fastest, most accurate) |
-| `from_cache(cache_dir)` | Load model from directory (default: "lut_gp") |
+| `from_cache(cache_dir)` | Load model from directory (default: "models") |
 
 **Training your own model:**
 ```bash
@@ -173,24 +165,31 @@ python examples/slicer_demo.py
 ```
 src/filament_mixer/
 ├── __init__.py      # Public API exports
-├── gp_mixer.py     # GPMixer (Gaussian Process, recommended)
+├── api.py           # FilamentMixer class (physics-based)
 ├── km_core.py       # Kubelka-Munk physics engine
 ├── pigments.py      # Filament spectral definitions & palettes
 ├── unmixer.py       # RGB → pigment concentration solver
-<<<<<<< HEAD
-├── api.py           # FilamentMixer class (main entry point)
-├── lut.py           # Lookup table generator for fast runtime mixing
-└── poly_mixer.py    # Polynomial regression mixer (Experiment A)
-=======
-├── api.py           # FilamentMixer class (physics-based)
-└── lut.py           # Lookup table generator for fast caching
+├── lut.py           # Lookup table generator for fast caching
+├── poly_mixer.py    # PolyMixer (polynomial regression)
+└── gp_mixer.py      # GPMixer (Gaussian Process regression)
 
 scripts/
-└── train_gp_model.py  # Train GPMixer on Mixbox ground truth
+├── train_poly_model.py  # Train PolyMixer on Mixbox ground truth
+└── train_gp_model.py    # Train GPMixer on Mixbox ground truth
 
-lut_gp/
-└── gp_model.pkl      # Pre-trained GPMixer model (32MB)
->>>>>>> gaussian-neural-net
+models/
+├── poly_model.pkl       # Pre-trained PolyMixer model (11KB)
+└── gp_model.pkl         # Pre-trained GPMixer model (31MB)
+
+docs/
+├── BREADCRUMB.md        # Development history and decisions
+├── CLAUDE.md            # AI assistant guidelines
+├── EXPERIMENTS.md       # Experiment notes and results
+└── LUT_GENERATION.md    # LUT generation documentation
+
+benchmarks/
+├── compare.py           # Text benchmark comparing all mixers
+└── visual_compare.py    # Generate comparison images
 ```
 
 ## How It Works

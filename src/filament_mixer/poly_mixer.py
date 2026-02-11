@@ -30,7 +30,7 @@ class PolyMixer:
         self.model = model
 
     @classmethod
-    def from_cache(cls, cache_dir: str = "lut_poly") -> "PolyMixer":
+    def from_cache(cls, cache_dir: str = "models") -> "PolyMixer":
         """Load a pre-trained polynomial model from cache.
 
         Args:

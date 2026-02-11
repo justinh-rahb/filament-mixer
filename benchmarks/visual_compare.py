@@ -28,7 +28,7 @@ except ImportError:
 
 try:
     from filament_mixer import PolyMixer
-    _poly_mixer = PolyMixer.from_cache("lut_poly")
+    _poly_mixer = PolyMixer.from_cache("models")
     HAS_POLY = True
 except (ImportError, FileNotFoundError):
     HAS_POLY = False
@@ -161,7 +161,7 @@ def generate_comparison_grid(output_path="benchmarks/visual_comparison.png", swa
     gp_mixer = None
     if HAS_GP:
         try:
-            gp_mixer = GPMixer.from_cache("lut_gp")
+            gp_mixer = GPMixer.from_cache("models")
             print("✓ Using GPMixer (Experiment C)")
             HAS_GP_LOADED = True
         except FileNotFoundError:
@@ -325,7 +325,7 @@ def generate_gradient_comparison(output_path="benchmarks/gradient_comparison.png
     gp_mixer = None
     if HAS_GP:
         try:
-            gp_mixer = GPMixer.from_cache("lut_gp")
+            gp_mixer = GPMixer.from_cache("models")
             HAS_GP_LOADED = True
         except FileNotFoundError:
             HAS_GP_LOADED = False
