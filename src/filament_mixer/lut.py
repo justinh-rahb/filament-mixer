@@ -42,10 +42,11 @@ class LUTGenerator:
         """
         Generate the RGB -> concentrations LUT.
 
-        Uses coarse-to-fine strategy: compute every 8th value, then
-        trilinearly interpolate the rest.
+        Uses coarse-to-fine strategy: compute on a sparse grid (step 8 + boundary),
+        then interpolate using scipy.interpolate.RegularGridInterpolator.
         """
         from tqdm import tqdm
+        from scipy.interpolate import RegularGridInterpolator
 
         if cache_file and Path(cache_file).exists():
             print(f"Loading unmix LUT from cache: {cache_file}")
@@ -55,59 +56,48 @@ class LUTGenerator:
 
         res = self.resolution
         print(f"Generating unmix LUT ({res}^3 = {res ** 3:,} colors)")
-        print("This will take a while... (~30-60 minutes)")
+        print("Using vectorized generation (should take ~2-5 minutes)...")
 
-        self.unmix_lut = np.zeros((res, res, res, 3), dtype=np.float32)
-
-        # Coarse pass: every 8th value
+        # Define sparse grid points (include 0, 8, 16... and ensure 255 is included)
         step = 8
-        print("\nCoarse pass (1/8 resolution)...")
-        coarse_set: set = set()
-        for r in tqdm(range(0, res, step)):
-            for g in range(0, res, step):
-                for b in range(0, res, step):
-                    rgb = uint8_to_rgb((r, g, b))
-                    conc = self.unmixer.unmix(rgb)
-                    self.unmix_lut[r, g, b, :] = conc[:3]
-                    coarse_set.add((r, g, b))
+        grid_points = sorted(list(set(range(0, res, step)) | {res - 1}))
+        n_points = len(grid_points)
+        print(f"Sparse grid size: {n_points}^3 = {n_points**3:,} samples")
 
-        # Interpolate the rest
-        print("\nInterpolating remaining values...")
-        for r in tqdm(range(res)):
-            for g in range(res):
-                for b in range(res):
-                    if (r, g, b) in coarse_set:
-                        continue
+        # Compute values at grid points
+        coarse_data = np.zeros((n_points, n_points, n_points, 3), dtype=np.float32)
+        
+        # Flatten grid for batch processing? 
+        # unmix() is constrained optimization, tough to batch without parallel processing.
+        # We'll stick to a loop for the coarse grid, it's small enough (33^3 = 35k).
+        
+        print("Computing sparse samples...")
+        iterations = n_points**3
+        with tqdm(total=iterations) as pbar:
+            for i, r in enumerate(grid_points):
+                for j, g in enumerate(grid_points):
+                    for k, b in enumerate(grid_points):
+                        rgb = uint8_to_rgb((r, g, b))
+                        conc = self.unmixer.unmix(rgb)
+                        coarse_data[i, j, k, :] = conc[:3]
+                        pbar.update(1)
 
-                    r0 = (r // step) * step
-                    g0 = (g // step) * step
-                    b0 = (b // step) * step
-                    r1 = min(r0 + step, res - 1)
-                    g1 = min(g0 + step, res - 1)
-                    b1 = min(b0 + step, res - 1)
+        # Create interpolator
+        print("\nInterpolating full tables...")
+        interp_func = RegularGridInterpolator(
+            (grid_points, grid_points, grid_points), 
+            coarse_data, 
+            bounds_error=False, 
+            fill_value=None
+        )
 
-                    rx = (r - r0) / step if step > 0 else 0
-                    gx = (g - g0) / step if step > 0 else 0
-                    bx = (b - b0) / step if step > 0 else 0
-
-                    c000 = self.unmix_lut[r0, g0, b0]
-                    c001 = self.unmix_lut[r0, g0, b1]
-                    c010 = self.unmix_lut[r0, g1, b0]
-                    c011 = self.unmix_lut[r0, g1, b1]
-                    c100 = self.unmix_lut[r1, g0, b0]
-                    c101 = self.unmix_lut[r1, g0, b1]
-                    c110 = self.unmix_lut[r1, g1, b0]
-                    c111 = self.unmix_lut[r1, g1, b1]
-
-                    c00 = c000 * (1 - rx) + c100 * rx
-                    c01 = c001 * (1 - rx) + c101 * rx
-                    c10 = c010 * (1 - rx) + c110 * rx
-                    c11 = c011 * (1 - rx) + c111 * rx
-
-                    c0 = c00 * (1 - gx) + c10 * gx
-                    c1 = c01 * (1 - gx) + c11 * gx
-
-                    self.unmix_lut[r, g, b, :] = c0 * (1 - bx) + c1 * bx
+        # Generate target coordinates
+        # We need to evaluate at every 0..255 point
+        # Using mgrid to create coordinate volume
+        # Note: mgrid is memory intensive for 256^3 * 3 coords (~200MB), which is fine
+        grid_coords = np.mgrid[0:res, 0:res, 0:res].transpose(1, 2, 3, 0)
+        
+        self.unmix_lut = interp_func(grid_coords).astype(np.float32)
 
         if cache_file:
             print(f"\nSaving unmix LUT to cache: {cache_file}")
@@ -118,7 +108,7 @@ class LUTGenerator:
         return self.unmix_lut
 
     def generate_mix_lut(self, cache_file: str | None = None) -> np.ndarray:
-        """Generate the concentrations -> RGB LUT (much faster than unmix)."""
+        """Generate the concentrations -> RGB LUT (fully vectorized)."""
         from tqdm import tqdm
 
         if cache_file and Path(cache_file).exists():
@@ -129,25 +119,138 @@ class LUTGenerator:
 
         res = self.resolution
         print(f"\nGenerating mix LUT ({res}^3 = {res ** 3:,} combinations)")
+        print("Using vectorized generation...")
 
         self.mix_lut = np.zeros((res, res, res, 3), dtype=np.float32)
 
-        for c1_idx in tqdm(range(res)):
-            for c2_idx in range(res):
-                for c3_idx in range(res):
-                    c1 = c1_idx / 255.0
-                    c2 = c2_idx / 255.0
-                    c3 = c3_idx / 255.0
-                    c4 = 1.0 - (c1 + c2 + c3)
+        # Use indices to generate concentrations
+        # c1, c2, c3 range from 0 to 1
+        idxs = np.arange(res, dtype=np.float32)
+        concs = idxs / 255.0
+        
+        # Create meshgrid of concentrations
+        # Memory: 256^3 * 3 floats = 192MB quite manageable
+        c1, c2, c3 = np.meshgrid(concs, concs, concs, indexing='ij')
+        
+        # Calculate c4
+        c4 = 1.0 - (c1 + c2 + c3)
+        
+        # Mask valid combinations
+        mask = c4 >= -1e-5  # slightly loose tolerance
+        valid_indices = np.where(mask)
+        
+        # Extract valid concentrations (N, 4)
+        N = len(valid_indices[0])
+        print(f"Computing {N:,} valid mixtures...")
+        
+        # Valid concentrations array
+        # Shape (N, 4)
+        c1_valid = c1[mask]
+        c2_valid = c2[mask]
+        c3_valid = c3[mask]
+        c4_valid = c4[mask]
+        
+        # Normalize to ensure sum=1 exactly (fix tolerance issues)
+        s = c1_valid + c2_valid + c3_valid + c4_valid
+        c1_valid /= s
+        c2_valid /= s
+        c3_valid /= s
+        c4_valid /= s
+        
+        concentrations = np.stack([c1_valid, c2_valid, c3_valid, c4_valid], axis=1)
 
-                    if c4 < 0:
-                        continue
-
-                    conc = np.array([c1, c2, c3, c4])
-                    rgb = self.km.mix_pigments_to_rgb(
-                        self.pigments, conc, apply_gamma=True
-                    )
-                    self.mix_lut[c1_idx, c2_idx, c3_idx, :] = rgb
+        # Vectorized pigment mixing
+        # We need to compute: R = KM(K, S) -> XYZ -> RGB
+        
+        # 1. Mix K and S
+        # K_mix: (N, 38)
+        K_mix = np.zeros((N, 38), dtype=np.float32)
+        S_mix = np.zeros((N, 38), dtype=np.float32)
+        
+        # Manual mix loop (only 4 pigments, so loop is fine)
+        for i, pigment in enumerate(self.pigments):
+            # c is (N, 1)
+            c = concentrations[:, i : i+1]
+            # pigment.K is (1, 38) (broadcasted)
+            K_mix += c * pigment.K[np.newaxis, :]
+            S_mix += c * pigment.S[np.newaxis, :]
+            
+        # 2. Compute Reflectance (Equation 2)
+        # Element-wise operations support (N, 38)
+        S_safe = np.where(S_mix == 0, 1e-10, S_mix)
+        a = K_mix / S_safe
+        b = np.sqrt(a * a + 2 * a)
+        R = 1 + a - b
+        R = np.clip(R, 0, 1)
+        
+        # 3. Saunderson Correction (Equation 6)
+        k1 = self.km.k1
+        k2 = self.km.k2
+        numerator = (1 - k1) * (1 - k2) * R
+        denominator = 1 - k2 * R
+        denominator = np.where(denominator == 0, 1e-10, denominator)
+        R_prime = numerator / denominator
+        R_prime = np.clip(R_prime, 0, 1)
+        
+        # 4. XYZ Integration
+        # CIE data: (38,)
+        # weighted_R: (N, 38)
+        from filament_mixer.km_core import (
+            CIE_X_BAR, CIE_Y_BAR, CIE_Z_BAR, 
+            D65_ILLUMINANT, CIE_WAVELENGTHS
+        )
+        
+        weighted_R = R_prime * D65_ILLUMINANT[np.newaxis, :]
+        
+        # Integrate along axis 1 (wavelengths)
+        try:
+            from numpy import trapezoid as trapz
+        except ImportError:
+            from numpy import trapz
+            
+        X = trapz(CIE_X_BAR[np.newaxis, :] * weighted_R, CIE_WAVELENGTHS, axis=1)
+        Y = trapz(CIE_Y_BAR[np.newaxis, :] * weighted_R, CIE_WAVELENGTHS, axis=1)
+        Z = trapz(CIE_Z_BAR[np.newaxis, :] * weighted_R, CIE_WAVELENGTHS, axis=1)
+        
+        X /= self.km.Y_D65
+        Y /= self.km.Y_D65
+        Z /= self.km.Y_D65
+        
+        # 5. RGB conversion
+        # XYZ to Linear RGB
+        M = np.array([
+            [ 3.2406, -1.5372, -0.4986],
+            [-0.9689,  1.8758,  0.0415],
+            [ 0.0557, -0.2040,  1.0570],
+        ])
+        
+        # Stack XYZ: (3, N)
+        XYZ = np.stack([X, Y, Z], axis=0)
+        rgb_linear = M @ XYZ  # (3, 3) @ (3, N) -> (3, N)
+        
+        # Gamma correction
+        # Vectorized gamma function
+        # gamma(x) = 12.92x if x <= 0.0031308 else 1.055 * x^(1/2.4) - 0.055
+        rgb_linear = rgb_linear.T # (N, 3)
+        
+        mask_low = rgb_linear <= 0.0031308
+        mask_high = ~mask_low
+        
+        rgb_final = np.zeros_like(rgb_linear)
+        rgb_final[mask_low] = 12.92 * rgb_linear[mask_low]
+        # Avoid negative bases in power
+        # Although linear RGB can be negative (out of gamut), we usually clip first?
+        # Mixbox implementation clips RGB to [0,1] at end.
+        # But for gamma power, negative values are NaNs.
+        # We should clip before gamma? Or handle abs?
+        # Standard: clip to 0 before gamma.
+        rgb_safe = np.clip(rgb_linear, 0, None)
+        rgb_final[mask_high] = 1.055 * (rgb_safe[mask_high] ** (1 / 2.4)) - 0.055
+        
+        rgb_final = np.clip(rgb_final, 0, 1)
+        
+        # Fill result array
+        self.mix_lut[mask] = rgb_final
 
         if cache_file:
             print(f"\nSaving mix LUT to cache: {cache_file}")

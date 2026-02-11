@@ -24,9 +24,9 @@ def create_cyan_filament() -> Pigment:
     """
     K = np.ones(len(CIE_WAVELENGTHS)) * 0.02
     # Red absorption — narrow to keep green (530nm) clean
-    K += gaussian_peak(CIE_WAVELENGTHS, 640, 60, 2.5)
+    K += gaussian_peak(CIE_WAVELENGTHS, 640, 45, 2.5)
     # Orange absorption — shifted to 600nm and tight so it doesn't eat green
-    K += gaussian_peak(CIE_WAVELENGTHS, 600, 30, 1.5)
+    K += gaussian_peak(CIE_WAVELENGTHS, 600, 20, 1.5)
     S = np.ones(len(CIE_WAVELENGTHS)) * 0.5
     return Pigment("Cyan", K, S)
 
@@ -41,9 +41,9 @@ def create_magenta_filament() -> Pigment:
     """
     K = np.ones(len(CIE_WAVELENGTHS)) * 0.03
     # Lower-green peak — narrow to avoid blue leakage
-    K += gaussian_peak(CIE_WAVELENGTHS, 530, 25, 3.0)
+    K += gaussian_peak(CIE_WAVELENGTHS, 530, 20, 3.0)
     # Upper-green peak — extends absorption toward yellow-green
-    K += gaussian_peak(CIE_WAVELENGTHS, 555, 30, 2.5)
+    K += gaussian_peak(CIE_WAVELENGTHS, 555, 20, 2.5)
     S = np.ones(len(CIE_WAVELENGTHS)) * 0.5
     return Pigment("Magenta", K, S)
 
