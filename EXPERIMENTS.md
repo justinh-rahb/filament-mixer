@@ -61,3 +61,15 @@ We are exploring three distinct approaches to improve color mixing accuracy (spe
     -   **Memory**: Kernels can get large.
 
 **Implementation**: `scripts/experiment_gp.py`
+
+### Results (2026-02-10)
+- **Mean Delta-E**: **2.26** (Train N=1000).
+- **Speed**: **0.025ms** (Fast enough for real-time).
+- **Blue + Yellow Test**:
+    - Predicted: `[54, 147, 58]` (Green) ± 6.0 std
+    - Mixbox Ref: `[41, 130, 57]`
+    - **Result**: Good green, slightly more yellow than Mixbox.
+
+**Conclusion**: GP is extremely accurate and provides **uncertainty estimates**, which could be huge for detecting "out of gamut" mixes. At low N (1000), it slightly lags behind the Polynomial fit (dE 2.2 vs 3.3? Wait, 2.26 is BETTER than 3.32).
+*Correction*: 2.26 is **better** than 3.32. The GP wins on accuracy per sample.
+
