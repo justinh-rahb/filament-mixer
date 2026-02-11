@@ -145,4 +145,51 @@ We are exploring three distinct approaches to improve color mixing accuracy (spe
 **Conclusion**: The logit transform seemingly introduces complex non-linearities that the 3rd-degree polynomial struggles to fit. The standard polynomial (Experiment A) is superior.
 
 
+---
+
+## Experiment E: Wondermixer (Pre-fitted Total Degree 3 Polynomial)
+
+**Hypothesis**: A pre-trained cubic polynomial with 120 coefficients fitted to MIXBOX data can provide excellent color mixing accuracy with minimal dependencies (only numpy), offering a lightweight alternative that doesn't require training infrastructure.
+
+-   **Model**: Full monomial feature map up to total degree 3 for 7D input `[(R1, G1, B1), (R2, G2, B2), T]`.
+-   **Features**: 120 polynomial terms = C(7+3, 3) via canonical ordering (degree 0, 1, 2, 3).
+-   **Training Data**: Pre-fitted on MIXBOX ground truth by WombleyRole (Snapmaker U1).
+-   **Input Transform**: RGB values normalized to [0,1], then mapped to [-1,1] before feature expansion.
+-   **Pros**:
+    -   **Zero Training**: Pre-fitted coefficients included (no sklearn/scipy needed).
+    -   **Minimal Dependencies**: Only requires numpy.
+    -   **Fast Inference**: Matrix multiplication only (~0.001ms).
+    -   **Good Mid-Range**: Excellent accuracy for mixing ratios 0.2-0.8.
+-   **Cons**:
+    -   **Extreme Ratio Issues**: Can be notably off at very low (<0.1) or very high (>0.9) mixing ratios, especially with white.
+    -   **Pairwise Only**: Like polynomial/GP approaches, mixing 3+ colors requires iterative mixing.
+    -   **Black Box**: Pre-trained weights without visibility into hypercubic fit process.
+
+**Implementation**: `scripts/experiment_wondermixer.py`
+
+**Credit**: Wombley
+**Approximate fit to**: MIXBOX by Sarka Sochorova and Ondrej Jamriska  
+  - Website: https://scrtwpns.com/mixbox/  
+  - GitHub: https://github.com/scrtwpns/mixbox
+
+### Results (2026-02-11)
+- **Mean Delta-E**: **3.38** (Better than Logit Poly's 5.43, but not as good as Poly's 2.07).
+- **Speed**: **0.1045 ms/sample** (Slower than Poly's 0.001ms, but still quite fast).
+- **Delta-E by Mixing Ratio**:
+    - **Extreme ratios** (<0.2 or >0.8): **3.08** (Good!)
+    - **Mid-range** (0.35-0.65): **4.08** (Surprisingly worse than extremes)
+    - **Other ratios**: **3.07** (Good)
+- **Edge Case Testing**:
+    - **t=0.0 (100% red)**: `[255, 0, 0]` ✓ Perfect!
+    - **t=1.0 (100% white)**: `[255, 218, 249]` ✗ Pink tint (expected `[255, 255, 255]`)
+    - **t=0.05 (Red+White)**: ΔE=1.62 ✓ Excellent
+    - **Yellow+Blue (t=0.5)**: `[80, 158, 92]` vs Mixbox `[78, 150, 100]` - Good green
+
+**Known Issues** (confirmed):
+- **Endpoint problem at t=1.0**: When mixing toward the second color (t→1), some color pairs produce incorrect tints. Red→White gives pink instead of pure white.
+- **Mid-range accuracy**: Surprisingly, the mid-range (0.35-0.65) has slightly higher error than extreme ratios, contrary to initial expectations.
+- **Not as good as Poly**: The 4th-degree polynomial approach (Experiment A) significantly outperforms this 3rd-degree approach (dE 2.07 vs 3.38).
+
+**Conclusion**: The Wondermixer provides a **lightweight, numpy-only** alternative with reasonable accuracy (dE 3.38), but doesn't match the production PolyMixer (dE 2.07). The pre-fitted coefficients eliminate training time, making it attractive for scenarios where sklearn is unavailable. However, the t=1.0 endpoint issue and mid-range performance gaps suggest the 4th-degree polynomial with proper training data coverage (Experiment A) remains superior for production use. Could be useful as a fallback or for embedded systems with limited dependencies.
+
 
