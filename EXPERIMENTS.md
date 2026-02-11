@@ -31,6 +31,41 @@ We are exploring three distinct approaches to improve color mixing accuracy (spe
 
 ---
 
+## Experiment C: Gaussian Process Regression (Direct RGB Mixing)
+
+**Hypothesis**: A Gaussian Process can learn the non-linear mixing manifold directly from Mixbox ground truth, providing high accuracy without requiring LUT tables or concentration-space unmixing.
+
+-   **Model**: `sklearn.gaussian_process.GaussianProcessRegressor` with RBF kernel  
+-   **Input**: 6D color pair + mixing ratio `(R1, G1, B1, R2, G2, B2, t)`
+-   **Training Data**: 2,000 random pairs mixed with `mixbox` (ground truth)
+-   **Pros**:
+    -   **Superior Accuracy**: Directly learns Mixbox's behavior
+    -   **No Unmixing**: Bypasses the ill-posed `RGB → Concentration` inverse problem
+    -   **Fast Inference**: ~0.018ms per mix (faster than physics engine)
+    -   **Variable t**: Handles any mixing ratio, not just fixed midpoints
+-   **Cons**:
+    -   **Pairwise Only**: Like polynomial, mixing 3+ colors requires iterative mixing
+    -   **Training Time**: O(N³) complexity means training takes ~7s for 2,000 samples
+
+**Implementation**: 
+- `src/filament_mixer/gp_mixer.py` — Production GPMixer class
+- `scripts/train_gp_model.py` — Model training script
+- Model cache: `lut_gp/gp_model.pkl`
+
+### Results (2026-02-11)
+- **Mean Delta-E**: **1.79** (Best accuracy of all non-LUT methods!)
+- **Max Delta-E**: **14.14**
+- **Speed**: **0.018ms** per mix (35x faster than physics engine)
+- **Blue + Yellow Test**:
+    - Predicted: `(47, 139, 49)` (Vibrant Green)
+    - Mixbox Ref: `(41, 130, 57)`
+    - Delta-E: **8.77** (Good green reproduction)
+
+**Conclusion**: GP achieves the **best accuracy** of any production-speed method, surpassing even the polynomial approach (dE 1.79 vs 3.32). The model successfully learns Mixbox's complex color mixing behavior through direct 6D → 3D regression, avoiding the problematic unmixing step entirely. This is the recommended approach for applications needing maximum accuracy without full LUT storage.
+
+
+---
+
 ## Experiment B: Green-Targeted Spectral Optimization
 
 **Hypothesis**: The current spectral optimizer found a local minimum that favored Red/White accuracy over Green. By heavily weighting "Blue + Yellow" pairs in the loss function, we can force the physics model to find a configuration that produces vibrant Green.

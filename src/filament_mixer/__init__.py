@@ -48,6 +48,14 @@ except ImportError:
     LUTGenerator = None
     FastLUTMixer = None
 
+# Optional GP mixer (requires scikit-learn)
+try:
+    from .gp_mixer import GPMixer
+    _HAS_GP = True
+except ImportError:
+    _HAS_GP = False
+    GPMixer = None
+
 __all__ = [
     # Core
     "KubelkaMunk",
@@ -79,4 +87,6 @@ __all__ = [
     # LUT (optional)
     "LUTGenerator",
     "FastLUTMixer",
+    # GP Mixer (optional)
+    "GPMixer",
 ]
