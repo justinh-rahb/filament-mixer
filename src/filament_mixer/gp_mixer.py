@@ -68,6 +68,12 @@ class GPMixer:
         Returns:
             Tuple of (r, g, b) for the mixed color (0-255)
         """
+        # Handle boundary cases exactly
+        if t <= 0.0:
+            return (r1, g1, b1)
+        if t >= 1.0:
+            return (r2, g2, b2)
+        
         # Prepare input: [r1, g1, b1, r2, g2, b2, t]
         # Scale RGB to [0, 1], t is already in [0, 1]
         X = np.array([[r1/255., g1/255., b1/255., r2/255., g2/255., b2/255., t]])
