@@ -1,5 +1,36 @@
 # FilamentMixer: Physics-Based Color Mixing for 3D Printing
 
+## Development Practices
+
+**IMPORTANT: Always use `./venv/` for Python virtual environment**
+
+```bash
+# Setup virtual environment
+python3 -m venv venv
+source venv/bin/activate  # On Unix/macOS
+pip install -e ".[dev]"
+
+# Run benchmarks  (generates PNG comparison images)
+python benchmarks/compare.py                    # Generates comparison.png
+python benchmarks/visual_compare.py             # Generates visual_comparison.png + gradient_comparison.png
+python benchmarks/compare_with_lut.py           # LUT-specific benchmarks
+python benchmarks/compare_poly.py               # Poly-specific benchmarks
+
+# Deactivate when done
+deactivate
+```
+
+**LUT Resolution:** 
+- Always use 256³ LUT resolution (not 64³) for production quality
+- Default in visual_compare.py is 256³
+- Override with `--lut-resolution 256` if needed
+- 64³ is only for quick testing/development
+
+**Benchmark Outputs:**
+- `benchmarks/comparison.png` - Matplotlib chart comparing all methods
+- `benchmarks/visual_comparison.png` - Swatch grid showing all mixers
+- `benchmarks/gradient_comparison.png` - Gradient strips for smooth transitions
+
 ## Project Purpose
 
 FilamentMixer implements physically-accurate color mixing for multi-material 3D printers. It replaces naive RGB interpolation (which produces muddy, desaturated blends) with spectral-based pigment physics using Kubelka-Munk theory.

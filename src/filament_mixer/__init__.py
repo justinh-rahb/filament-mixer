@@ -56,6 +56,14 @@ except ImportError:
     _HAS_POLY = False
     PolyMixer = None
 
+# Optional GP mixer (requires scikit-learn)
+try:
+    from .gp_mixer import GPMixer
+    _HAS_GP = True
+except ImportError:
+    _HAS_GP = False
+    GPMixer = None
+
 __all__ = [
     # Core
     "KubelkaMunk",
@@ -89,4 +97,6 @@ __all__ = [
     "FastLUTMixer",
     # Polynomial Mixer (optional)
     "PolyMixer",
+    # GP Mixer (optional)
+    "GPMixer",
 ]

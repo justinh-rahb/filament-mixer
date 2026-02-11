@@ -8,11 +8,14 @@ Replaces naive RGB interpolation — which produces muddy, desaturated blends �
 
 ## Status
 
-> **Alpha / Research.** This project implements the Kubelka-Munk mixing
-> pipeline with Gaussian-approximated pigment spectra. It includes a **Production-Ready
-> Polynomial Mixer** (Experiment A) which achieves a Mean Delta-E of **2.07**
-> against Mixbox and runs at **0.001ms** per mix. While the physics engine remains available
-> for research, the Polynomial model is the recommended solution for production speed and accuracy.
+> **Production Ready.** This project implements the Kubelka-Munk mixing
+> pipeline with two production-ready learned models:
+> - **PolyMixer** (Polynomial Neural Network): Mean Delta-E **2.07** at **0.001ms** per mix — fastest option
+> - **GPMixer** (Gaussian Process Regression): Mean Delta-E **1.79** at **0.018ms** per mix — most accurate non-LUT
+> 
+> Both models vastly outperform the baseline K-M physics engine (dE 11.77, ~4.8ms) while maintaining
+> physically plausible color behavior (Blue+Yellow=Green). The physics engine remains available
+> for research and custom spectral tuning.
 
 ## Why?
 
@@ -40,14 +43,19 @@ pip install -e ".[dev]"
 ## Quick Start
 
 ```python
-from filament_mixer import FilamentMixer, PolyMixer, CMYW_PALETTE
+from filament_mixer import PolyMixer, GPMixer, FilamentMixer, CMYW_PALETTE
 
-# Option 1: Fast Polynomial Mixer (Recommended for Speed & Accuracy)
+# Option 1: Polynomial Mixer (Fastest - 0.001ms per mix, dE 2.07)
 poly = PolyMixer.from_cache("lut_poly")
 green = poly.lerp(0, 33, 133,  252, 211, 0,  0.5)
 print(f"Poly Result: RGB{green}")
 
-# Option 2: Physics-based Mixer (Great for custom pigments)
+# Option 2: Gaussian Process Mixer (Most Accurate - 0.018ms per mix, dE 1.79)
+gp = GPMixer.from_cache("lut_gp")
+green = gp.lerp(0, 33, 133,  252, 211, 0,  0.5)
+print(f"GP Result: RGB{green}")  # Vibrant green: (47, 139, 49)
+
+# Option 3: Physics-based Mixer (Great for custom pigments)
 mixer = FilamentMixer(CMYW_PALETTE)
 green_fm = mixer.lerp(0, 33, 133,  252, 211, 0,  0.5)
 
@@ -59,22 +67,28 @@ for name, r in zip(["Cyan", "Magenta", "Yellow", "White"], ratios):
 
 ## Slicer Integration
 
-Drop-in replacement for RGB color mixing:
+**Recommended:** Use GPMixer for best accuracy and speed:
 
 ```python
-from filament_mixer import FilamentMixer, CMYW_PALETTE
+from filament_mixer import GPMixer
 
-mixer = FilamentMixer(CMYW_PALETTE)
+mixer = GPMixer()  # Loads pre-trained model
 
-# Replace: result = (1-t)*color1 + t*color2
-# With:
+# Drop-in replacement for: result = (1-t)*color1 + t*color2
 result = mixer.lerp(*color1, *color2, t)
 ```
-
-Generate M163/M164 G-code for multi-extruder setups:
+PolyMixer or GPMixer for best accuracy and speed:
 
 ```python
+from filament_mixer import PolyMixer  # or GPMixer
+
+mixer = PolyMixer.from_cache("lut_poly")  # Fastest (0.001ms)
+# OR
+# mixer = GPMixer.from_cache("lut_gp")    # Most accurate (0.018ms)
+mixer = FilamentMixer(CMYW_PALETTE)
 ratios = mixer.get_filament_ratios(128, 200, 80)
+
+# Generate M163/M164 G-code for multi-extruder setups
 for i, ratio in enumerate(ratios):
     print(f"M163 S{i} P{ratio:.6f}")
 print("M164 S0")
@@ -84,19 +98,23 @@ print("M164 S0")
 
 | Approach | Speed | Accuracy (dE vs Mixbox) | Use Case |
 |----------|-------|-------------------------|----------|
+<<<<<<< HEAD
 | Naive RGB | Instant | ~35.0 (Varies) | Legacy slicers |
 | FM (Optimization) | ~4.8ms | 11.77 | Research / Spectral tuning |
 | FM (256³ LUT) | 0.02ms | 11.77 | Fast physics-based mixing |
 | **PolyMixer (v2)** | **0.001ms** | **2.07** | **Best Production Accuracy** |
 | Mixbox (Reference) | 0.01ms | 0.00 | Digital painting (Gold standard) |
+=======
+| Naive RGB Lerp | Instant | ~35.0 (Varies) | Legacy slicers |
+| Naive RGB Lerp | Instant | ~35.0 (Varies) | Legacy slicers |
+| **PolyMixer (This)** | **0.001ms** | **2.07** 🚀 | **Production / Fastest** |
+| **GPMixer (This)** | **0.018ms** | **1.79** 🏆 | **Production / Most Accurate** |
+| FastLUT 256³ (This) | 0.02ms | 11.77 | Pre-cached mixing |
+| K-M Physics (This) | ~4.8ms | 11.77 | Research / Spectral tuning |
+| Mixbox (Reference) | 0.01ms | 0.00 | Digital painting (Commercial license) |
 
-## Built-in Palettes
-
-| Palette | Filaments | Best for |
-|---------|-----------|----------|
-| `CMYW_PALETTE` | Cyan, Magenta, Yellow, White | Widest gamut, bright colors |
-| `CMYK_PALETTE` | Cyan, Magenta, Yellow, Black | Deep darks, print-like output |
-| `RYBW_PALETTE` | Red, Yellow, Blue, White | Traditional art mixing |
+**PolyMixer** uses polynomial regression trained on Mixbox samples for ultra-fast mixing.  
+**GPMixer** uses Gaussian Process regression for near-perfect accuracy at production speeds.low, Blue, White | Traditional art mixing |
 
 ## API Reference
 
@@ -126,6 +144,20 @@ Recommended for high-performance pairwise mixing. Loads a pre-trained polynomial
 - **`KubelkaMunk(k1, k2)`** — Low-level spectral mixing engine
 - **`RGBUnmixer(pigments)`** — Inverse solver (RGB → concentrations)
 
+### `GPMixer(model_path)`
+
+**Recommended for production.** Gaussian Process-based mixer trained on Mixbox ground truth.
+
+| Method | Description |
+|--------|-------------|
+| `lerp(r1, g1, b1, r2, g2, b2, t)` | Mix two colors (fastest, most accurate) |
+| `from_cache(cache_dir)` | Load model from directory (default: "lut_gp") |
+
+**Training your own model:**
+```bash
+python scripts/train_gp_model.py  # Trains on 2,000 Mixbox samples (~7s)
+```
+
 ## Examples
 
 ```bash
@@ -141,15 +173,35 @@ python examples/slicer_demo.py
 ```
 src/filament_mixer/
 ├── __init__.py      # Public API exports
+├── gp_mixer.py     # GPMixer (Gaussian Process, recommended)
 ├── km_core.py       # Kubelka-Munk physics engine
 ├── pigments.py      # Filament spectral definitions & palettes
 ├── unmixer.py       # RGB → pigment concentration solver
+<<<<<<< HEAD
 ├── api.py           # FilamentMixer class (main entry point)
 ├── lut.py           # Lookup table generator for fast runtime mixing
 └── poly_mixer.py    # Polynomial regression mixer (Experiment A)
+=======
+├── api.py           # FilamentMixer class (physics-based)
+└── lut.py           # Lookup table generator for fast caching
+
+scripts/
+└── train_gp_model.py  # Train GPMixer on Mixbox ground truth
+
+lut_gp/
+└── gp_model.pkl      # Pre-trained GPMixer model (32MB)
+>>>>>>> gaussian-neural-net
 ```
 
 ## How It Works
+
+### GPMixer (Recommended)
+
+A Gaussian Process Regressor trained on 2,000 Mixbox samples learns the direct `(RGB₁, RGB₂, t) → RGB_mix` mapping. This bypasses the complex physics and inverse problems entirely, achieving **dE 1.79** accuracy at **0.018ms** per mix.
+
+**Why it works:** Mixbox is the ground truth for pigment mixing. By training directly on its outputs, GPMixer learns the perceptually-optimal color blending behavior without needing to understand the underlying spectral physics.
+
+### FilamentMixer (Physics-Based)
 
 1. **Spectral Mixing (K-M Theory):** Each filament is defined by its absorption (K) and scattering (S) spectra across 38 wavelengths (380–750nm). Colors are mixed by linearly combining K and S values — this is physically correct for pigment mixtures.
 

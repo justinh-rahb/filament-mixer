@@ -35,6 +35,12 @@ except (ImportError, FileNotFoundError):
     _poly_mixer = None
 
 try:
+    from filament_mixer import GPMixer
+    HAS_GP = True
+except ImportError:
+    HAS_GP = False
+
+try:
     import mixbox
     HAS_MIXBOX = True
 except ImportError:
@@ -130,7 +136,7 @@ def create_gradient_strip(c1, c2, width, height, steps=5):
     return img
 
 
-def generate_comparison_grid(output_path="benchmarks/visual_comparison.png", swatch_size=120, lut_resolution=64):
+def generate_comparison_grid(output_path="benchmarks/visual_comparison.png", swatch_size=120, lut_resolution=256):
     """Generate a comprehensive visual comparison grid."""
     
     # Initialize mixers
@@ -152,14 +158,26 @@ def generate_comparison_grid(output_path="benchmarks/visual_comparison.png", swa
     if HAS_POLY:
         print("✓ Using PolyMixer")
     
+    gp_mixer = None
+    if HAS_GP:
+        try:
+            gp_mixer = GPMixer.from_cache("lut_gp")
+            print("✓ Using GPMixer (Experiment C)")
+            HAS_GP_LOADED = True
+        except FileNotFoundError:
+            print("⚠ GPMixer model not found (run: python scripts/train_gp_model.py)")
+            HAS_GP_LOADED = False
+    else:
+        HAS_GP_LOADED = False
+    
     if HAS_MIXBOX:
         print("✓ Using Mixbox for comparison")
     
     # Calculate grid dimensions
     num_pairs = len(COLOR_PAIRS)
-    num_methods = 2 + (1 if HAS_LUT_LOADED else 0) + (1 if HAS_POLY else 0) + (1 if HAS_MIXBOX else 0)
+    num_methods = 2 + (1 if HAS_LUT_LOADED else 0) + (1 if HAS_POLY else 0) + (1 if HAS_GP_LOADED else 0) + (1 if HAS_MIXBOX else 0)
     
-    # Layout: Each row shows: C1 | C2 | RGB | FM | LUT? | Mixbox?
+    # Layout: Each row shows: C1 | C2 | RGB | FM | LUT? | Poly? | GP? | Mixbox?
     cell_width = swatch_size
     cell_height = swatch_size
     margin = 10
@@ -198,6 +216,8 @@ def generate_comparison_grid(output_path="benchmarks/visual_comparison.png", swa
         headers.append("FastLUT")
     if HAS_POLY:
         headers.append("PolyMixer")
+    if HAS_GP_LOADED:
+        headers.append("GPMixer")
     if HAS_MIXBOX:
         headers.append("Mixbox")
     
@@ -251,6 +271,13 @@ def generate_comparison_grid(output_path="benchmarks/visual_comparison.png", swa
             canvas.paste(swatch_poly, (x_offset, y_offset))
             x_offset += cell_width + margin
         
+        # GPMixer
+        if HAS_GP_LOADED:
+            gp_result = gp_mixer.lerp(*c1, *c2, 0.5)
+            swatch_gp = create_color_swatch(gp_result, cell_width, cell_height)
+            canvas.paste(swatch_gp, (x_offset, y_offset))
+            x_offset += cell_width + margin
+        
         # Mixbox
         if HAS_MIXBOX:
             mixbox_result = mixbox.lerp(c1, c2, 0.5)
@@ -279,7 +306,7 @@ def generate_comparison_grid(output_path="benchmarks/visual_comparison.png", swa
     return output_file
 
 
-def generate_gradient_comparison(output_path="benchmarks/gradient_comparison.png", lut_resolution=64):
+def generate_gradient_comparison(output_path="benchmarks/gradient_comparison.png", lut_resolution=256):
     """Generate gradient strips showing smooth color transitions."""
     
     # Initialize mixers
@@ -295,6 +322,16 @@ def generate_gradient_comparison(output_path="benchmarks/gradient_comparison.png
     else:
         HAS_LUT_LOADED = False
     
+    gp_mixer = None
+    if HAS_GP:
+        try:
+            gp_mixer = GPMixer.from_cache("lut_gp")
+            HAS_GP_LOADED = True
+        except FileNotFoundError:
+            HAS_GP_LOADED = False
+    else:
+        HAS_GP_LOADED = False
+    
     # Select a few interesting pairs
     selected_pairs = [
         ("Blue + Yellow → Green", (0, 33, 133), (252, 211, 0)),
@@ -308,7 +345,7 @@ def generate_gradient_comparison(output_path="benchmarks/gradient_comparison.png
     label_height = 40
     steps = 9  # Number of gradient steps
     
-    num_methods = 2 + (1 if HAS_LUT_LOADED else 0) + (1 if HAS_POLY else 0) + (1 if HAS_MIXBOX else 0)
+    num_methods = 2 + (1 if HAS_LUT_LOADED else 0) + (1 if HAS_POLY else 0) + (1 if HAS_GP_LOADED else 0) + (1 if HAS_MIXBOX else 0)
     canvas_height = len(selected_pairs) * (num_methods * (strip_height + 5) + label_height + margin) + margin
     
     canvas = Image.new('RGB', (strip_width + 2 * margin, canvas_height), (250, 250, 250))
@@ -383,6 +420,20 @@ def generate_gradient_comparison(output_path="benchmarks/gradient_comparison.png
             canvas.paste(poly_strip, (margin, y_offset + 20))
             y_offset += strip_height + 5
         
+        # GP gradient
+        if HAS_GP_LOADED:
+            gp_strip = Image.new('RGB', (strip_width, strip_height))
+            for i in range(steps):
+                t = i / (steps - 1)
+                color = gp_mixer.lerp(*c1, *c2, t)
+                for x in range(i * step_width, min((i + 1) * step_width, strip_width)):
+                    for y in range(strip_height):
+                        gp_strip.putpixel((x, y), color)
+            
+            draw.text((margin, y_offset), "GPMixer", fill=(80, 80, 80), font=label_font)
+            canvas.paste(gp_strip, (margin, y_offset + 20))
+            y_offset += strip_height + 5
+        
         # Mixbox gradient
         if HAS_MIXBOX:
             mixbox_strip = Image.new('RGB', (strip_width, strip_height))
@@ -436,7 +487,7 @@ def main():
     parser.add_argument(
         "--lut-resolution",
         type=int,
-        default=64,
+        default=256,
         choices=[64, 256],
         help="LUT resolution to use (64 or 256)"
     )

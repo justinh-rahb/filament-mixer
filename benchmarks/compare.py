@@ -29,6 +29,15 @@ except (ImportError, FileNotFoundError):
     HAS_POLY = False
     poly_mixer = None
 
+# Try to import GPMixer
+try:
+    from filament_mixer import GPMixer
+    gp_mixer = GPMixer.from_cache("lut_gp")
+    HAS_GP = True
+except (ImportError, FileNotFoundError):
+    HAS_GP = False
+    gp_mixer = None
+
 # Try to import Mixbox for head-to-head comparison
 try:
     import mixbox
@@ -168,6 +177,8 @@ def benchmark_mixing():
     header = "  BENCHMARK: FilamentMixer"
     if HAS_POLY:
         header += " + PolyMixer"
+    if HAS_GP:
+        header += " + GPMixer"
     header += " vs RGB Lerp"
     if HAS_MIXBOX:
         header += " vs Mixbox"
@@ -178,6 +189,8 @@ def benchmark_mixing():
         print("\n  (Install pymixbox for head-to-head comparison: pip install pymixbox)")
     if not HAS_POLY:
         print("\n  (Train polynomial model: python scripts/train_poly_model.py)")
+    if not HAS_GP:
+        print("\n  (Train GP model: python scripts/train_gp_model.py)")
 
     results = []
 
@@ -191,6 +204,10 @@ def benchmark_mixing():
         if HAS_POLY:
             poly_result = poly_mixer.lerp(*c1, *c2, t)
 
+        gp_result = None
+        if HAS_GP:
+            gp_result = gp_mixer.lerp(*c1, *c2, t)
+
         mixbox_result = None
         if HAS_MIXBOX:
             mixbox_result = mixbox.lerp(c1, c2, t)
@@ -203,6 +220,7 @@ def benchmark_mixing():
                 "rgb": rgb_result,
                 "filament_mixer": fm_result,
                 "poly": poly_result,
+                "gp": gp_result,
                 "mixbox": mixbox_result,
             }
         )
@@ -212,6 +230,8 @@ def benchmark_mixing():
     cols = ["RGB Lerp", "FM"]
     if HAS_POLY:
         cols.append("Poly")
+    if HAS_GP:
+        cols.append("GP")
     if HAS_MIXBOX:
         cols.append("Mixbox")
     header_line = f"  {'Pair':<22}"
@@ -224,6 +244,8 @@ def benchmark_mixing():
         line = f"  {r['name']:<22} {str(r['rgb']):>14} {str(r['filament_mixer']):>14}"
         if HAS_POLY:
             line += f" {str(r['poly']):>14}"
+        if HAS_GP:
+            line += f" {str(r['gp']):>14}"
         if HAS_MIXBOX:
             line += f" {str(r['mixbox']):>14}"
         print(line)
@@ -235,11 +257,13 @@ def benchmark_saturation(results):
     """Compare saturation retention — the core quality metric."""
     print("\n" + "=" * 80)
     print("  SATURATION RETENTION (higher = more vivid, less muddy)")
-    print("=" * 80)
+    print("="  * 80)
 
     cols = ["RGB Lerp", "FM"]
     if HAS_POLY:
         cols.append("Poly")
+    if HAS_GP:
+        cols.append("GP")
     if HAS_MIXBOX:
         cols.append("Mixbox")
     cols.append("FM vs RGB")
@@ -260,6 +284,9 @@ def benchmark_saturation(results):
         if HAS_POLY and r["poly"]:
             sat_poly = saturation_of(*r["poly"])
             line += f" {sat_poly:>10.3f}"
+        if HAS_GP and r["gp"]:
+            sat_gp = saturation_of(*r["gp"])
+            line += f" {sat_gp:>10.3f}"
         if HAS_MIXBOX and r["mixbox"]:
             sat_mx = saturation_of(*r["mixbox"])
             line += f" {sat_mx:>10.3f}"
@@ -281,6 +308,8 @@ def benchmark_hue_accuracy(results):
     cols = ["RGB hue", "FM hue"]
     if HAS_POLY:
         cols.append("Poly")
+    if HAS_GP:
+        cols.append("GP")
     if HAS_MIXBOX:
         cols.append("Mixbox")
     cols.append("Expected")
@@ -301,6 +330,9 @@ def benchmark_hue_accuracy(results):
         if HAS_POLY and r["poly"]:
             hue_poly = hue_of(*r["poly"])
             line += f" {hue_poly:>9.1f}°"
+        if HAS_GP and r["gp"]:
+            hue_gp = hue_of(*r["gp"])
+            line += f" {hue_gp:>9.1f}°"
         if HAS_MIXBOX and r["mixbox"]:
             hue_mx = hue_of(*r["mixbox"])
             line += f" {hue_mx:>9.1f}°"
@@ -330,6 +362,8 @@ def benchmark_delta_e_vs_mixbox(results):
     cols = ["dE(FM)"]
     if HAS_POLY:
         cols.append("dE(Poly)")
+    if HAS_GP:
+        cols.append("dE(GP)")
     cols.append("dE(RGB)")
     cols.append("Winner")
     header_line = f"\n  {'Pair':<22}"
@@ -340,8 +374,10 @@ def benchmark_delta_e_vs_mixbox(results):
 
     fm_closer = 0
     poly_closer = 0
+    gp_closer = 0
     fm_deltas = []
     poly_deltas = []
+    gp_deltas = []
     for r in results:
         if r["mixbox"] is None:
             continue
@@ -354,20 +390,31 @@ def benchmark_delta_e_vs_mixbox(results):
             de_poly = delta_e(r["poly"], r["mixbox"])
             poly_deltas.append(de_poly)
 
+        de_gp = None
+        if HAS_GP and r["gp"]:
+            de_gp = delta_e(r["gp"], r["mixbox"])
+            gp_deltas.append(de_gp)
+
         # Determine winner
         candidates = {"FM": de_fm, "RGB": de_rgb}
         if de_poly is not None:
             candidates["Poly"] = de_poly
+        if de_gp is not None:
+            candidates["GP"] = de_gp
         winner = min(candidates, key=candidates.get)
 
         if de_fm < de_rgb:
             fm_closer += 1
         if de_poly is not None and de_poly < de_rgb:
             poly_closer += 1
+        if de_gp is not None and de_gp < de_rgb:
+            gp_closer += 1
 
         line = f"  {r['name']:<22} {de_fm:>10.2f}"
         if de_poly is not None:
             line += f" {de_poly:>10.2f}"
+        if de_gp is not None:
+            line += f" {de_gp:>10.2f}"
         line += f" {de_rgb:>10.2f}  {winner:>10}"
         print(line)
 
@@ -377,6 +424,9 @@ def benchmark_delta_e_vs_mixbox(results):
     if poly_deltas:
         print(f"  Poly closer to Mixbox than RGB: {poly_closer}/{len(results)} pairs")
         print(f"  Mean Delta-E (Poly vs Mixbox): {np.mean(poly_deltas):.2f}")
+    if gp_deltas:
+        print(f"  GP closer to Mixbox than RGB: {gp_closer}/{len(results)} pairs")
+        print(f"  Mean Delta-E (GP vs Mixbox): {np.mean(gp_deltas):.2f}")
     print(f"  (< 2.0 = imperceptible, < 5.0 = minor, < 10.0 = noticeable)")
 
 
@@ -445,6 +495,15 @@ def benchmark_speed():
             poly_mixer.lerp(*c1, *c2, 0.5)
         t_poly = (time.perf_counter() - t0) / n_poly
         print(f"  PolyMixer.lerp():        {t_poly*1000:>8.4f} ms  ({t_lerp/t_poly:.0f}x faster than FM)")
+
+    if HAS_GP:
+        n_gp = 1000
+        gp_mixer.lerp(*c1, *c2, 0.5)  # warm up
+        t0 = time.perf_counter()
+        for _ in range(n_gp):
+            gp_mixer.lerp(*c1, *c2, 0.5)
+        t_gp = (time.perf_counter() - t0) / n_gp
+        print(f"  GPMixer.lerp():          {t_gp*1000:>8.4f} ms  ({t_lerp/t_gp:.0f}x faster than FM)")
 
     if HAS_MIXBOX:
         t0 = time.perf_counter()
