@@ -45,6 +45,16 @@ We are exploring three distinct approaches to improve color mixing accuracy (spe
 
 **Implementation**: `scripts/optimize_green.py`
 
+### Results (2026-02-10)
+- **Loss Improvement**: 21.23 -> 21.08 (Minimal).
+- **Blue + Yellow Test**:
+    - Result: `(77, 102, 48)` (Muddy Olive).
+    - Target: `(41, 130, 57)` (Vibrant Green).
+    - **Failure**: Even with 50x weighting, the physics model could not bend the spectral curves enough to produce green without destroying other colors.
+
+**Conclusion**: The "Green Problem" is likely structural (Gaussian approximation limit). The physics engine has hit a hard ceiling.
+
+
 ---
 
 ## Experiment C: Gaussian Process Regression (GP)
