@@ -84,7 +84,53 @@ python benchmarks/visual_compare.py --skip-gradient
 
 ---
 
-### 4. `compare_poly.py` - Polynomial Mixer Deep Analysis
+### 4. `detailed_metrics.py` - Comprehensive Resource & Performance Analysis
+**NEW** - Deep dive into performance, accuracy, code complexity, and resource usage.
+
+**Usage:**
+```bash
+# Run full benchmark suite
+python benchmarks/detailed_metrics.py
+
+# Save results to JSON
+python benchmarks/detailed_metrics.py --output results.json
+
+# Custom iteration count
+python benchmarks/detailed_metrics.py --iterations 500
+```
+
+**Measures:**
+- **Performance**:
+  - Initialization time & memory usage
+  - Inference speed (mean/std/min/max)
+  - Batch processing throughput
+- **Accuracy**:
+  - Delta-E vs Mixbox (mean/median/std/min/max)
+  - Per-test-case breakdown
+- **Resources**:
+  - Model file sizes (bytes/KB/MB)
+  - Source code lines (total/code/comments/blank)
+  - Number of files involved
+  - Memory footprint
+
+**Output:**
+- Console summary table
+- Optional JSON export with full metrics
+- Comparison across all available mixers (RGB, Physics, Poly, GP)
+
+**Example Output:**
+```
+Method                    Speed        Accuracy     Model        LOC
+----------------------------------------------------------------------
+RGB Lerp                  < 0.0001 ms  dE 35.21     None         0
+PolyMixer                 0.0012 ms    dE 2.07      143.5 KB     187
+GPMixer                   0.0182 ms    dE 1.79      1.2 MB       215
+FilamentMixer (Physics)   8.2341 ms    dE 11.77     None         842
+```
+
+---
+
+### 5. `compare_poly.py` - Polynomial Mixer Deep Analysis
 Focused benchmark for the PolyMixer (Experiment A polynomial regression).
 
 **Prerequisites:**

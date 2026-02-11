@@ -1,0 +1,597 @@
+{
+  "timestamp": "2026-02-11 03:35:13",
+  "test_pairs": 7,
+  "has_mixbox": true,
+  "mixers": [
+    {
+      "name": "RGB Lerp",
+      "source_code": {
+        "module": "RGB Lerp",
+        "files": 0,
+        "lines": {
+          "total": 0,
+          "code": 0,
+          "comments": 0,
+          "blank": 0
+        }
+      },
+      "model": null,
+      "initialization": {
+        "time_ms": 0,
+        "memory_peak_kb": 0,
+        "memory_peak_mb": 0
+      },
+      "performance": {
+        "per_call_ms": {
+          "mean": 0.0001,
+          "std": 0,
+          "min": 0,
+          "max": 0
+        }
+      },
+      "accuracy": {
+        "available": true,
+        "samples": 7,
+        "delta_e": {
+          "mean": 19.963180792233967,
+          "std": 9.025415445311486,
+          "min": 8.51064601290767,
+          "max": 35.491516161790486,
+          "median": 17.375225752629248
+        },
+        "details": [
+          {
+            "test": "Blue + Yellow",
+            "predicted": [
+              126,
+              122,
+              66
+            ],
+            "ground_truth": [
+              41,
+              130,
+              57
+            ],
+            "delta_e": 35.491516161790486
+          },
+          {
+            "test": "Red + Blue",
+            "predicted": [
+              127,
+              36,
+              67
+            ],
+            "ground_truth": [
+              85,
+              47,
+              58
+            ],
+            "delta_e": 23.262901736838938
+          },
+          {
+            "test": "Red + Yellow",
+            "predicted": [
+              253,
+              125,
+              1
+            ],
+            "ground_truth": [
+              255,
+              103,
+              27
+            ],
+            "delta_e": 13.982495950975949
+          },
+          {
+            "test": "Magenta + Yellow",
+            "predicted": [
+              190,
+              106,
+              23
+            ],
+            "ground_truth": [
+              190,
+              80,
+              35
+            ],
+            "delta_e": 17.375225752629248
+          },
+          {
+            "test": "Blue + White",
+            "predicted": [
+              127,
+              144,
+              194
+            ],
+            "ground_truth": [
+              72,
+              146,
+              246
+            ],
+            "delta_e": 29.040632873386134
+          },
+          {
+            "test": "Red + White",
+            "predicted": [
+              255,
+              147,
+              128
+            ],
+            "ground_truth": [
+              255,
+              130,
+              117
+            ],
+            "delta_e": 8.51064601290767
+          },
+          {
+            "test": "Green + Magenta",
+            "predicted": [
+              64,
+              31,
+              48
+            ],
+            "ground_truth": [
+              67,
+              28,
+              64
+            ],
+            "delta_e": 12.078847057109355
+          }
+        ]
+      }
+    },
+    {
+      "name": "FilamentMixer (Physics)",
+      "source_code": {
+        "module": "FilamentMixer (Physics)",
+        "files": 4,
+        "lines": {
+          "total": 585,
+          "code": 182,
+          "comments": 338,
+          "blank": 65
+        }
+      },
+      "model": null,
+      "initialization": {
+        "time_ms": 0.0817,
+        "memory_peak_kb": 3.53,
+        "memory_peak_mb": 0.0
+      },
+      "performance": {
+        "iterations": 100,
+        "samples_per_iteration": 7,
+        "total_ms": {
+          "mean": 33.55982994660735,
+          "std": 0.6913703941761461,
+          "min": 32.33079146593809,
+          "max": 35.896167159080505
+        },
+        "per_call_ms": {
+          "mean": 4.794261420943908,
+          "std": 0.09876719916802087,
+          "min": 4.618684495134013,
+          "max": 5.1280238798686435
+        }
+      },
+      "accuracy": {
+        "available": true,
+        "samples": 7,
+        "delta_e": {
+          "mean": 12.107834460863845,
+          "std": 7.048838580770971,
+          "min": 5.584506554313136,
+          "max": 24.776229057075522,
+          "median": 8.184585114847799
+        },
+        "details": [
+          {
+            "test": "Blue + Yellow",
+            "predicted": [
+              78,
+              102,
+              47
+            ],
+            "ground_truth": [
+              41,
+              130,
+              57
+            ],
+            "delta_e": 24.776229057075522
+          },
+          {
+            "test": "Red + Blue",
+            "predicted": [
+              89,
+              33,
+              44
+            ],
+            "ground_truth": [
+              85,
+              47,
+              58
+            ],
+            "delta_e": 10.079698811173907
+          },
+          {
+            "test": "Red + Yellow",
+            "predicted": [
+              251,
+              105,
+              1
+            ],
+            "ground_truth": [
+              255,
+              103,
+              27
+            ],
+            "delta_e": 5.584506554313136
+          },
+          {
+            "test": "Magenta + Yellow",
+            "predicted": [
+              170,
+              77,
+              32
+            ],
+            "ground_truth": [
+              190,
+              80,
+              35
+            ],
+            "delta_e": 8.184585114847799
+          },
+          {
+            "test": "Blue + White",
+            "predicted": [
+              96,
+              132,
+              195
+            ],
+            "ground_truth": [
+              72,
+              146,
+              246
+            ],
+            "delta_e": 21.170081620982067
+          },
+          {
+            "test": "Red + White",
+            "predicted": [
+              253,
+              133,
+              104
+            ],
+            "ground_truth": [
+              255,
+              130,
+              117
+            ],
+            "delta_e": 7.8640549054625435
+          },
+          {
+            "test": "Green + Magenta",
+            "predicted": [
+              64,
+              18,
+              48
+            ],
+            "ground_truth": [
+              67,
+              28,
+              64
+            ],
+            "delta_e": 7.095685162191937
+          }
+        ]
+      }
+    },
+    {
+      "name": "PolyMixer",
+      "source_code": {
+        "module": "PolyMixer",
+        "files": 1,
+        "lines": {
+          "total": 76,
+          "code": 32,
+          "comments": 35,
+          "blank": 9
+        }
+      },
+      "model": {
+        "name": "PolyMixer",
+        "path": "/Users/justinh/Development/github.com/justinh-rahb/filament-mixer/models/poly_model.pkl",
+        "size_bytes": 11362,
+        "size_kb": 11.1,
+        "size_mb": 0.01,
+        "exists": true
+      },
+      "initialization": {
+        "time_ms": 1505.1026,
+        "memory_peak_kb": 30004.37,
+        "memory_peak_mb": 29.3
+      },
+      "performance": {
+        "iterations": 100,
+        "samples_per_iteration": 7,
+        "total_ms": {
+          "mean": 0.6646025273948908,
+          "std": 0.044073427652210916,
+          "min": 0.6315829232335091,
+          "max": 0.921458937227726
+        },
+        "per_call_ms": {
+          "mean": 0.09494321819927011,
+          "std": 0.006296203950315847,
+          "min": 0.0902261318905013,
+          "max": 0.1316369910325323
+        }
+      },
+      "accuracy": {
+        "available": true,
+        "samples": 7,
+        "delta_e": {
+          "mean": 5.598941746311288,
+          "std": 3.5722077567381465,
+          "min": 1.5704306632494256,
+          "max": 11.952730833621402,
+          "median": 5.967518320743588
+        },
+        "details": [
+          {
+            "test": "Blue + Yellow",
+            "predicted": [
+              47,
+              141,
+              56
+            ],
+            "ground_truth": [
+              41,
+              130,
+              57
+            ],
+            "delta_e": 7.081571340752978
+          },
+          {
+            "test": "Red + Blue",
+            "predicted": [
+              83,
+              44,
+              54
+            ],
+            "ground_truth": [
+              85,
+              47,
+              58
+            ],
+            "delta_e": 1.5704306632494256
+          },
+          {
+            "test": "Red + Yellow",
+            "predicted": [
+              255,
+              100,
+              22
+            ],
+            "ground_truth": [
+              255,
+              103,
+              27
+            ],
+            "delta_e": 1.7166057967072341
+          },
+          {
+            "test": "Magenta + Yellow",
+            "predicted": [
+              179,
+              87,
+              29
+            ],
+            "ground_truth": [
+              190,
+              80,
+              35
+            ],
+            "delta_e": 8.215498151544823
+          },
+          {
+            "test": "Blue + White",
+            "predicted": [
+              80,
+              151,
+              231
+            ],
+            "ground_truth": [
+              72,
+              146,
+              246
+            ],
+            "delta_e": 11.952730833621402
+          },
+          {
+            "test": "Red + White",
+            "predicted": [
+              255,
+              134,
+              116
+            ],
+            "ground_truth": [
+              255,
+              130,
+              117
+            ],
+            "delta_e": 2.688237117559568
+          },
+          {
+            "test": "Green + Magenta",
+            "predicted": [
+              66,
+              27,
+              54
+            ],
+            "ground_truth": [
+              67,
+              28,
+              64
+            ],
+            "delta_e": 5.967518320743588
+          }
+        ]
+      }
+    },
+    {
+      "name": "GPMixer",
+      "source_code": {
+        "module": "GPMixer",
+        "files": 1,
+        "lines": {
+          "total": 110,
+          "code": 44,
+          "comments": 50,
+          "blank": 16
+        }
+      },
+      "model": {
+        "name": "GPMixer",
+        "path": "/Users/justinh/Development/github.com/justinh-rahb/filament-mixer/models/gp_model.pkl",
+        "size_bytes": 32134824,
+        "size_kb": 31381.66,
+        "size_mb": 30.65,
+        "exists": true
+      },
+      "initialization": {
+        "time_ms": 21.0878,
+        "memory_peak_kb": 31894.69,
+        "memory_peak_mb": 31.15
+      },
+      "performance": {
+        "iterations": 100,
+        "samples_per_iteration": 7,
+        "total_ms": {
+          "mean": 0.37579295225441456,
+          "std": 0.02315457494677848,
+          "min": 0.36295875906944275,
+          "max": 0.5064588040113449
+        },
+        "per_call_ms": {
+          "mean": 0.05368470746491636,
+          "std": 0.003307796420968355,
+          "min": 0.05185125129563468,
+          "max": 0.07235125771590642
+        }
+      },
+      "accuracy": {
+        "available": true,
+        "samples": 7,
+        "delta_e": {
+          "mean": 4.38498899805812,
+          "std": 2.3791778793273477,
+          "min": 0.902054028628343,
+          "max": 8.767415527565632,
+          "median": 3.2978815807572968
+        },
+        "details": [
+          {
+            "test": "Blue + Yellow",
+            "predicted": [
+              47,
+              139,
+              49
+            ],
+            "ground_truth": [
+              41,
+              130,
+              57
+            ],
+            "delta_e": 8.767415527565632
+          },
+          {
+            "test": "Red + Blue",
+            "predicted": [
+              88,
+              45,
+              49
+            ],
+            "ground_truth": [
+              85,
+              47,
+              58
+            ],
+            "delta_e": 5.83098914232783
+          },
+          {
+            "test": "Red + Yellow",
+            "predicted": [
+              255,
+              109,
+              32
+            ],
+            "ground_truth": [
+              255,
+              103,
+              27
+            ],
+            "delta_e": 2.922473332843962
+          },
+          {
+            "test": "Magenta + Yellow",
+            "predicted": [
+              190,
+              80,
+              33
+            ],
+            "ground_truth": [
+              190,
+              80,
+              35
+            ],
+            "delta_e": 0.902054028628343
+          },
+          {
+            "test": "Blue + White",
+            "predicted": [
+              84,
+              143,
+              233
+            ],
+            "ground_truth": [
+              72,
+              146,
+              246
+            ],
+            "delta_e": 5.681711028481182
+          },
+          {
+            "test": "Red + White",
+            "predicted": [
+              255,
+              136,
+              118
+            ],
+            "ground_truth": [
+              255,
+              130,
+              117
+            ],
+            "delta_e": 3.2923983458025927
+          },
+          {
+            "test": "Green + Magenta",
+            "predicted": [
+              70,
+              24,
+              64
+            ],
+            "ground_truth": [
+              67,
+              28,
+              64
+            ],
+            "delta_e": 3.2978815807572968
+          }
+        ]
+      }
+    }
+  ]
+}
