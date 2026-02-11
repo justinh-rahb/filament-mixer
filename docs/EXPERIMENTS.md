@@ -31,41 +31,6 @@ We are exploring three distinct approaches to improve color mixing accuracy (spe
 
 ---
 
-## Experiment C: Gaussian Process Regression (Direct RGB Mixing)
-
-**Hypothesis**: A Gaussian Process can learn the non-linear mixing manifold directly from Mixbox ground truth, providing high accuracy without requiring LUT tables or concentration-space unmixing.
-
--   **Model**: `sklearn.gaussian_process.GaussianProcessRegressor` with RBF kernel  
--   **Input**: 6D color pair + mixing ratio `(R1, G1, B1, R2, G2, B2, t)`
--   **Training Data**: 2,000 random pairs mixed with `mixbox` (ground truth)
--   **Pros**:
-    -   **Superior Accuracy**: Directly learns Mixbox's behavior
-    -   **No Unmixing**: Bypasses the ill-posed `RGB → Concentration` inverse problem
-    -   **Fast Inference**: ~0.018ms per mix (faster than physics engine)
-    -   **Variable t**: Handles any mixing ratio, not just fixed midpoints
--   **Cons**:
-    -   **Pairwise Only**: Like polynomial, mixing 3+ colors requires iterative mixing
-    -   **Training Time**: O(N³) complexity means training takes ~7s for 2,000 samples
-
-**Implementation**: 
-- `src/filament_mixer/gp_mixer.py` — Production GPMixer class
-- `scripts/train_gp_model.py` — Model training script
-- Model cache: `lut_gp/gp_model.pkl`
-
-### Results (2026-02-11)
-- **Mean Delta-E**: **1.79** (Best accuracy of all non-LUT methods!)
-- **Max Delta-E**: **14.14**
-- **Speed**: **0.018ms** per mix (35x faster than physics engine)
-- **Blue + Yellow Test**:
-    - Predicted: `(47, 139, 49)` (Vibrant Green)
-    - Mixbox Ref: `(41, 130, 57)`
-    - Delta-E: **8.77** (Good green reproduction)
-
-**Conclusion**: GP achieves the **best accuracy** of any production-speed method, surpassing even the polynomial approach (dE 1.79 vs 3.32). The model successfully learns Mixbox's complex color mixing behavior through direct 6D → 3D regression, avoiding the problematic unmixing step entirely. This is the recommended approach for applications needing maximum accuracy without full LUT storage.
-
-
----
-
 ## Experiment B: Green-Targeted Spectral Optimization
 
 **Hypothesis**: The current spectral optimizer found a local minimum that favored Red/White accuracy over Green. By heavily weighting "Blue + Yellow" pairs in the loss function, we can force the physics model to find a configuration that produces vibrant Green.
@@ -92,31 +57,38 @@ We are exploring three distinct approaches to improve color mixing accuracy (spe
 
 ---
 
-## Experiment C: Gaussian Process Regression (GP)
+## Experiment C: Gaussian Process Regression (Direct RGB Mixing)
 
-**Hypothesis**: A Gaussian Process can learn the non-linear mixing manifold perfectly, outperforming polynomials for complex color interactions.
+**Hypothesis**: A Gaussian Process can learn the non-linear mixing manifold directly from Mixbox ground truth, providing high accuracy without requiring LUT tables or concentration-space unmixing.
 
--   **Model**: `sklearn.gaussian_process.GaussianProcessRegressor` with RBF kernel.
--   **input**: 6D color pair (or 7D latent representation).
+-   **Model**: `sklearn.gaussian_process.GaussianProcessRegressor` with RBF kernel  
+-   **Input**: 6D color pair + mixing ratio `(R1, G1, B1, R2, G2, B2, t)`
+-   **Training Data**: 2,000 random pairs mixed with `mixbox` (ground truth)
 -   **Pros**:
-    -   **High Accuracy**: Theoretically capable of perfect interpolation.
-    -   **Uncertainty**: Can tell us when it's "guessing" (high variance).
+    -   **Superior Accuracy**: Directly learns Mixbox's behavior
+    -   **No Unmixing**: Bypasses the ill-posed `RGB → Concentration` inverse problem
+    -   **Fast Inference**: ~0.018ms per mix (faster than physics engine)
+    -   **Variable t**: Handles any mixing ratio, not just fixed midpoints
 -   **Cons**:
-    -   **Slow**: Training is $O(N^3)$. Inference is slower than polynomial.
-    -   **Memory**: Kernels can get large.
+    -   **Pairwise Only**: Like polynomial, mixing 3+ colors requires iterative mixing
+    -   **Training Time**: O(N³) complexity means training takes ~7s for 2,000 samples
 
-**Implementation**: `scripts/experiment_gp.py`
+**Implementation**: 
+- `src/filament_mixer/gp_mixer.py` — Production GPMixer class
+- `scripts/train_gp_model.py` — Model training script
+- Model cache: `models/gp_model.pkl`
 
-### Results (2026-02-10)
-- **Mean Delta-E**: **2.26** (Train N=1000).
-- **Speed**: **0.025ms** (Fast enough for real-time).
+### Results (2026-02-11)
+- **Mean Delta-E**: **1.79** (Best accuracy of all non-LUT methods!)
+- **Max Delta-E**: **14.14**
+- **Speed**: **0.018ms** per mix (35x faster than physics engine)
 - **Blue + Yellow Test**:
-    - Predicted: `[54, 147, 58]` (Green) ± 6.0 std
-    - Mixbox Ref: `[41, 130, 57]`
-    - **Result**: Good green, slightly more yellow than Mixbox.
+    - Predicted: `(47, 139, 49)` (Vibrant Green)
+    - Mixbox Ref: `(41, 130, 57)`
+    - Delta-E: **8.77** (Good green reproduction)
 
-**Conclusion**: GP is extremely accurate and provides **uncertainty estimates**, which could be huge for detecting "out of gamut" mixes. At low N (1000), it slightly lags behind the Polynomial fit (dE 2.2 vs 3.3? Wait, 2.26 is BETTER than 3.32).
-*Correction*: 2.26 is **better** than 3.32. The GP wins on accuracy per sample.
+**Conclusion**: GP achieves the **best accuracy** of any production-speed method, surpassing even the polynomial approach (dE 1.79 vs 2.07). The model successfully learns Mixbox's complex color mixing behavior through direct 6D → 3D regression, avoiding the problematic unmixing step entirely. This is the recommended approach for applications needing maximum accuracy without full LUT storage.
+
 
 ---
 
@@ -144,8 +116,8 @@ We are exploring three distinct approaches to improve color mixing accuracy (spe
 
 **Conclusion**: The logit transform seemingly introduces complex non-linearities that the 3rd-degree polynomial struggles to fit. The standard polynomial (Experiment A) is superior.
 
-
 ---
+
 
 ## Experiment E: Wondermixer (Pre-fitted Total Degree 3 Polynomial)
 

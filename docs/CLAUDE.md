@@ -48,8 +48,16 @@ src/filament_mixer/
 ├── unmixer.py       # RGB → pigment concentration solver
 ├── api.py           # FilamentMixer class (main entry point)
 ├── lut.py           # Lookup table generator for fast runtime mixing
-└── scripts/
-    └── optimize_pigments.py # Differentiable spectral optimizer
+├── poly_mixer.py    # PolyMixer - Production polynomial model
+└── gp_mixer.py      # GPMixer - Production Gaussian Process model
+
+scripts/
+├── optimize_pigments.py    # Differentiable spectral optimizer
+├── train_poly_model.py     # Train polynomial model
+├── train_gp_model.py       # Train GP model
+├── generate_lut.py         # Generate physics-based LUTs
+├── experiment_*.py         # Research experiments (A-E)
+└── lut_demo.py            # Performance demonstrations
 ```
 
 ### Key Classes
@@ -57,7 +65,9 @@ src/filament_mixer/
 - **`Pigment`** — Dataclass containing name, K spectrum (38 wavelengths), S spectrum
 - **`KubelkaMunk`** — Physics engine that implements the full mixing pipeline
 - **`RGBUnmixer`** — Constrained optimizer (SLSQP) that solves RGB → concentrations
-- **`FilamentMixer`** — High-level API that combines all components
+- **`FilamentMixer`** — High-level API that combines physics components
+- **`PolyMixer`** — Production polynomial model (degree 4, dE 2.07, 0.001ms)
+- **`GPMixer`** — Production Gaussian Process model (dE 1.79, 0.018ms)
 
 ## How Color Mixing Works
 
@@ -169,7 +179,23 @@ S = constant_scattering
 
 ## API Usage
 
-### Basic Mixing
+### Production Models (Recommended)
+
+```python
+from filament_mixer import PolyMixer, GPMixer
+
+# Option 1: PolyMixer - Fastest (0.001ms, dE 2.07)
+poly = PolyMixer.from_cache("models")
+green = poly.lerp(0, 33, 133,  252, 211, 0,  0.5)  # Blue + Yellow
+print(f"RGB{green}")  # Vibrant green!
+
+# Option 2: GPMixer - Most Accurate (0.018ms, dE 1.79)
+gp = GPMixer.from_cache("models")
+green = gp.lerp(0, 33, 133,  252, 211, 0,  0.5)
+print(f"RGB{green}")  # Even more accurate!
+```
+
+### Physics Engine (Research/N-way Mixing)
 
 ```python
 from filament_mixer import FilamentMixer, CMYW_PALETTE
@@ -223,39 +249,48 @@ RYBW_PALETTE  # Red, Yellow, Blue, White — traditional art mixing
 
 **Why CMYW is recommended:** Wider color gamut than RYB, plus White allows tinting without desaturation.
 
-## Known Limitations
+## Known Limitations (Physics Engine)
 
 1. **Approximate spectra** — Gaussian peaks, not measured filament data
-2. **Runtime overhead** — `unmix()` solves constrained optimization on every call (slow)
-3. **No perceptual training** — Hand-tuned, not optimized against human perception
+2. **Runtime overhead** — `unmix()` solves constrained optimization on every call (~8ms)
+3. **Lower accuracy** — Physics model achieves dE ~11.77 vs Mixbox
 4. **Out-of-gamut handling** — Uses linear RGB residual (works but not optimal)
-5. **The "grey problem"** — Plain K-M without careful spectral tuning gets muddy mixes
 
-**Mitigations:**
-- Gaussian peaks are better than binary step functions (why we avoid the worst "grey problem")
-- Carefully tuned spectra based on real pigment behavior (Phthalo Blue, Quinacridone Magenta, etc.)
-- LUT precomputation available via `lut.py` (trades memory for speed)
+**Production Solutions:**
+- **PolyMixer** — 4th-degree polynomial trained on Mixbox (dE 2.07, 0.001ms)
+- **GPMixer** — Gaussian Process trained on Mixbox (dE 1.79, 0.018ms)
+- Both models vastly outperform the physics engine while maintaining physically plausible behavior
 
 ## Comparison to Alternatives
 
 | Approach | Speed | Accuracy (dE vs Mixbox) | Use Case |
 |----------|-------|-------------------------|----------|
-| Naive RGB | Instant | ~35.0 (Varies) | Legacy slicers |
-| This (K-M + Gaussian) | ~8ms | **14.43** | Research / Spectral tuning |
-| This (Using 256³ LUT) | **0.02ms** | **14.39** | Production / Slicer use |
-| Mixbox (Reference) | 0.01ms | 0.00 | Digital painting (Gold standard) |
+| Naive RGB | Instant | ~35.0 | Legacy slicers (incorrect physics) |
+| GPMixer (Prod) | **0.018ms** | **1.79** | Best accuracy, production ready |
+| PolyMixer (Prod) | **0.001ms** | **2.07** | Fastest, production ready |
+| Wondermixer (Exp E) | 0.10ms | 3.38 | Numpy-only, embedded systems |
+| Physics (K-M) | ~8ms | 11.77 | Research / N-way mixing |
+| Physics (256³ LUT) | 0.02ms | 11.77 | Accelerated physics |
+| Mixbox (Reference) | 0.01ms | 0.00 | Gold standard |
 
-## Future Improvements
+## Future Improvements (for Physics Engine)
 
-From `README.md` limitations section, the path to Mixbox-level quality:
+Path to improve the physics-based approach:
 
 1. **Measure real K/S curves** — Use spectrophotometer on physical filament samples
 2. **Train encoder/decoder** — Optimize pigment concentrations against measured data
-3. **Precompute LUT** — Generate 256³ table from trained model
-4. **Perceptual loss** — Minimize ΔE (color difference) across full gamut
+3. **Perceptual loss** — Minimize ΔE (color difference) across full gamut
+
+Note: The learned models (PolyMixer, GPMixer) already achieve near-Mixbox accuracy without these improvements.
 
 ## Project Status
 
-**Alpha / Research.** Produces noticeably better results than naive RGB (blue + yellow → green, not gray), but not tuned to Mixbox's level. Good enough for practical 3D printer color mixing; needs work for professional color reproduction.
+**Production Ready.** Two production models available:
+- **PolyMixer** — 4th-degree polynomial (dE 2.07, 0.001ms) — Fastest option
+- **GPMixer** — Gaussian Process (dE 1.79, 0.018ms) — Most accurate option
+
+Both models produce physically plausible results (blue + yellow → green, not gray) with accuracy approaching Mixbox (dE 1.79 vs Mixbox's 0.00). Suitable for production use in 3D printer slicers and color mixing applications.
+
+The physics engine (Kubelka-Munk) remains available for research, N-way mixing, and spectral analysis.
 
 **License:** MIT (safe for commercial use, unlike Mixbox's CC BY-NC 4.0)
