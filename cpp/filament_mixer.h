@@ -2,7 +2,8 @@
  * FilamentMixer — Header-only C++ pigment color mixer
  *
  * Drop-in replacement for mixbox. Uses a degree-4 polynomial regression
- * trained on Mixbox ground truth (Mean Delta-E ~2.07).
+ * trained to approximate Mixbox behavior (Mean Delta-E ~2.07).
+ * This library does not include Mixbox source code, binaries, or data files.
  *
  * Usage:
  *   #include "filament_mixer.h"

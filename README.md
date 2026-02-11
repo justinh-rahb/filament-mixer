@@ -241,6 +241,7 @@ Plain Kubelka-Munk with hand-crafted spectra still has known issues (the "[grey 
 ### Why not just use Mixbox?
 
 Mixbox is [CC BY-NC 4.0](https://scrtwpns.com/mixbox/docs/#license) (non-commercial only, commercial license required). This project is MIT-licensed and purpose-built for 3D printer filament mixing, where the palette (CMYW/CMYK) and mixing physics (plastic filament, not paint) are different from Mixbox's art-pigment focus.
+FilamentMixer is an independent approximation of Mixbox behavior and does not include Mixbox source code, binaries, or data files.
 
 For higher-quality results, the path forward would be:
 1. Measure real K/S curves from physical filament samples

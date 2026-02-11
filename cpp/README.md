@@ -1,6 +1,8 @@
 # FilamentMixer C++
 
-Header-only C++ port of the PolyMixer (Experiment A) — a degree-4 polynomial regression trained on [Mixbox](https://github.com/scrtwpns/mixbox) ground truth. Drop-in replacement for `mixbox_lerp`.
+Header-only C++ port of the PolyMixer (Experiment A) — a degree-4 polynomial regression trained to approximate [Mixbox](https://github.com/scrtwpns/mixbox) behavior. Drop-in replacement for `mixbox_lerp`.
+
+This library is an independent approximation and does not include Mixbox source code, binaries, or data files.
 
 **Performance:** Mean Delta-E **2.07** vs Mixbox reference. Blue + Yellow gives you **green**, not gray.
 
@@ -228,4 +230,4 @@ The accuracy difference (dE 2.07) is below the threshold of casual perception fo
 
 MIT — same as the parent FilamentMixer project.
 
-The polynomial coefficients were trained on Mixbox outputs. Mixbox itself is by Sarka Sochorova and Ondrej Jamriska ([scrtwpns.com/mixbox](https://scrtwpns.com/mixbox/)).
+The polynomial coefficients were trained against Mixbox outputs as reference targets. This repository does not include Mixbox source code, binaries, or data files. Mixbox itself is by Sarka Sochorova and Ondrej Jamriska ([scrtwpns.com/mixbox](https://scrtwpns.com/mixbox/)).
