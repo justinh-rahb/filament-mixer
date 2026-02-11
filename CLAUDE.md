@@ -201,11 +201,12 @@ RYBW_PALETTE  # Red, Yellow, Blue, White — traditional art mixing
 
 ## Comparison to Alternatives
 
-| Approach | Speed | Accuracy | Use Case |
-|----------|-------|----------|----------|
-| Naive RGB | Instant | Poor | Legacy slicers |
-| This (K-M + Gaussian) | ~10-50ms | Good | 3D printing (MIT licensed) |
-| Mixbox (K-M + Measured + LUT) | <1ms | Excellent | Digital painting (non-commercial) |
+| Approach | Speed | Accuracy (dE vs Mixbox) | Use Case |
+|----------|-------|-------------------------|----------|
+| Naive RGB | Instant | ~35.0 (Varies) | Legacy slicers |
+| This (K-M + Gaussian) | ~8ms | **14.43** | Research / Spectral tuning |
+| This (Using 256³ LUT) | **0.02ms** | **14.39** | Production / Slicer use |
+| Mixbox (Reference) | 0.01ms | 0.00 | Digital painting (Gold standard) |
 
 ## Future Improvements
 
