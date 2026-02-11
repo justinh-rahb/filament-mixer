@@ -4,6 +4,7 @@
 - **Production Performance:** Two production models available:
   - **PolyMixer (Experiment A)**: 4th-degree polynomial, dE **2.07** at **0.001ms** per mix
   - **GPMixer (Experiment C)**: Gaussian Process, dE **1.79** (best accuracy) at **0.018ms** per mix
+- **C++ Port:** PolyMixer ported to header-only C++ library in `cpp/`. Drop-in replacement for `mixbox_lerp`. Coefficients auto-generated from `poly_model.pkl` via `scripts/export_poly_coefficients.py`. Verified to produce identical output to the Python PolyMixer.
 - **Recent Research:** Experiment E (Wondermixer) evaluated - numpy-only cubic polynomial with dE 3.38
 - **Physics Core:** Kubelka-Munk implementation remains available for N-way mixing and research (dE 11.77)
 - **Benchmarks:** Comprehensive suite in `benchmarks/` directory

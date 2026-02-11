@@ -28,6 +28,8 @@ We are exploring three distinct approaches to improve color mixing accuracy (spe
 
 **Conclusion**: The 4th-degree polynomial is **the chosen production model** for high-performance mixing. It provides the best balance of speed, simplicity, and accuracy.
 
+**C++ Port**: This model has been ported to a header-only C++ library in `cpp/`. The trained coefficients (330 polynomial features x 3 output channels) are extracted from `poly_model.pkl` via `scripts/export_poly_coefficients.py` and baked into `cpp/filament_mixer_data.inc`. The C++ version produces identical output to the Python PolyMixer and serves as a drop-in replacement for `mixbox_lerp`. See `cpp/README.md` for full documentation.
+
 
 ---
 

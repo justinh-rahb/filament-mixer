@@ -51,10 +51,17 @@ src/filament_mixer/
 ├── poly_mixer.py    # PolyMixer - Production polynomial model
 └── gp_mixer.py      # GPMixer - Production Gaussian Process model
 
+cpp/
+├── filament_mixer.h          # Header-only C++ port of PolyMixer
+├── filament_mixer_data.inc   # Auto-generated polynomial coefficients (330x3)
+├── example.cpp               # Test/verification program
+└── CMakeLists.txt            # CMake build config (C++11)
+
 scripts/
 ├── optimize_pigments.py    # Differentiable spectral optimizer
 ├── train_poly_model.py     # Train polynomial model
 ├── train_gp_model.py       # Train GP model
+├── export_poly_coefficients.py  # Export poly_model.pkl → C++ header
 ├── generate_lut.py         # Generate physics-based LUTs
 ├── experiment_*.py         # Research experiments (A-E)
 └── lut_demo.py            # Performance demonstrations
@@ -66,7 +73,7 @@ scripts/
 - **`KubelkaMunk`** — Physics engine that implements the full mixing pipeline
 - **`RGBUnmixer`** — Constrained optimizer (SLSQP) that solves RGB → concentrations
 - **`FilamentMixer`** — High-level API that combines physics components
-- **`PolyMixer`** — Production polynomial model (degree 4, dE 2.07, 0.001ms)
+- **`PolyMixer`** — Production polynomial model (degree 4, dE 2.07, 0.001ms) — also available as [C++ header-only library](../cpp/)
 - **`GPMixer`** — Production Gaussian Process model (dE 1.79, 0.018ms)
 
 ## How Color Mixing Works
@@ -260,6 +267,40 @@ RYBW_PALETTE  # Red, Yellow, Blue, White — traditional art mixing
 - **PolyMixer** — 4th-degree polynomial trained on Mixbox (dE 2.07, 0.001ms)
 - **GPMixer** — Gaussian Process trained on Mixbox (dE 1.79, 0.018ms)
 - Both models vastly outperform the physics engine while maintaining physically plausible behavior
+
+## C++ Port
+
+The PolyMixer has been ported to a header-only C++ library in `cpp/`. It's a drop-in replacement for `mixbox_lerp` with the same function signature.
+
+### How the C++ Port Works
+
+The sklearn pipeline (`PolynomialFeatures(degree=4) + LinearRegression`) is decomposed into raw arrays:
+
+1. **`POWERS[330][7]`** — Exponent patterns for each monomial term. Each row defines a monomial like `x0^a0 * x1^a1 * ... * x6^a6`.
+2. **`COEF[330][3]`** — Linear regression weights (one column per R/G/B output channel).
+3. **`INTERCEPT[3]`** — Bias terms.
+
+At runtime: build the 330 monomial features from the 7 inputs, then dot product with COEF + INTERCEPT. No sklearn, no numpy, no model files.
+
+### Regenerating Coefficients
+
+When the Python model is retrained:
+
+```bash
+python scripts/export_poly_coefficients.py
+```
+
+This extracts coefficients from `models/poly_model.pkl`, verifies them against sklearn's predictions (must match exactly), and writes `cpp/filament_mixer_data.inc`.
+
+### C++ Build
+
+```bash
+cd cpp
+cmake -B build . && cmake --build build
+./build/filament_mixer_example  # Runs verification tests
+```
+
+Or without CMake: `c++ -std=c++11 -O2 -o example example.cpp`
 
 ## Comparison to Alternatives
 
