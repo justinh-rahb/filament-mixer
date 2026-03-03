@@ -777,6 +777,35 @@ inline void lerp(unsigned char r1, unsigned char g1, unsigned char b1,
         return;
     }
 
+    const int gray_thresh = 3;
+    const int c1_max = std::max({static_cast<int>(r1), static_cast<int>(g1), static_cast<int>(b1)});
+    const int c1_min = std::min({static_cast<int>(r1), static_cast<int>(g1), static_cast<int>(b1)});
+    const int c2_max = std::max({static_cast<int>(r2), static_cast<int>(g2), static_cast<int>(b2)});
+    const int c2_min = std::min({static_cast<int>(r2), static_cast<int>(g2), static_cast<int>(b2)});
+    const bool is_gray1 = (c1_max - c1_min) <= gray_thresh;
+    const bool is_gray2 = (c2_max - c2_min) <= gray_thresh;
+
+    const double td = static_cast<double>(t);
+    const double base[3] = {
+        (1.0 - td) * static_cast<double>(r1) + td * static_cast<double>(r2),
+        (1.0 - td) * static_cast<double>(g1) + td * static_cast<double>(g2),
+        (1.0 - td) * static_cast<double>(b1) + td * static_cast<double>(b2)
+    };
+
+    // Near-gray inputs are better behaved with plain linear interpolation.
+    if (is_gray1 && is_gray2) {
+        int v0 = static_cast<int>(base[0]);
+        int v1 = static_cast<int>(base[1]);
+        int v2 = static_cast<int>(base[2]);
+        if (v0 < 0) v0 = 0; if (v0 > 255) v0 = 255;
+        if (v1 < 0) v1 = 0; if (v1 > 255) v1 = 255;
+        if (v2 < 0) v2 = 0; if (v2 > 255) v2 = 255;
+        *out_r = static_cast<unsigned char>(v0);
+        *out_g = static_cast<unsigned char>(v1);
+        *out_b = static_cast<unsigned char>(v2);
+        return;
+    }
+
     double x[7] = {
         static_cast<double>(r1), static_cast<double>(g1), static_cast<double>(b1),
         static_cast<double>(r2), static_cast<double>(g2), static_cast<double>(b2),
@@ -787,13 +816,20 @@ inline void lerp(unsigned char r1, unsigned char g1, unsigned char b1,
     detail::compute_poly_features(x, features);
 
     // Dot product: features @ COEF + INTERCEPT
+    double pred[3];
     for (int c = 0; c < 3; ++c) {
         double sum = detail::INTERCEPT[c];
         for (int i = 0; i < detail::N_FEATURES; ++i) {
             sum += features[i] * detail::COEF[i][c];
         }
-        // Clamp to [0, 255] and truncate (matches numpy astype(int) behavior)
-        int val = static_cast<int>(sum);
+        pred[c] = sum;
+    }
+
+    // Damp polynomial influence near t edges; full strength at t=0.5.
+    const double clamp_strength = 4.0 * td * (1.0 - td);
+    for (int c = 0; c < 3; ++c) {
+        double mixed = base[c] + clamp_strength * (pred[c] - base[c]);
+        int val = static_cast<int>(mixed);
         if (val < 0) val = 0;
         if (val > 255) val = 255;
 

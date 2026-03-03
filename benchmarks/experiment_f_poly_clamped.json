@@ -1,0 +1,37 @@
+{
+  "experiment": "Experiment F - Poly Clamp Wrapper",
+  "model_path": "models/poly_model.pkl",
+  "samples": 20000,
+  "seed": 42,
+  "speed": {
+    "batch_size": 20000,
+    "baseline_ms_per_batch": 25.108754151733592,
+    "clamp_overlay_ms_per_batch": 2.016137499595061,
+    "clamped_ms_per_batch": 27.124891651328653,
+    "baseline_us_per_mix": 1.2554377075866796,
+    "clamped_us_per_mix": 1.3562445825664327,
+    "overhead_percent": 8.029619818695226
+  },
+  "drift": {
+    "mean_channel_shift_all": 1.3519833333333333,
+    "mean_channel_shift_edge": 2.535890365170887,
+    "mean_channel_shift_mid": 0.09399201108665525,
+    "mean_dist_to_linear_all": {
+      "baseline": 5.498433333333334,
+      "clamped": 4.14645
+    },
+    "mean_dist_to_linear_edge": {
+      "baseline": 3.157516503718559,
+      "clamped": 0.6216261385476728
+    }
+  },
+  "mixbox_accuracy": {
+    "available": true,
+    "samples": 5000,
+    "baseline_mean_de": 2.1145393542718156,
+    "clamped_mean_de": 2.267249709422289,
+    "delta_mean_de": 0.15271035515047315,
+    "baseline_median_de": 1.569031648195888,
+    "clamped_median_de": 1.5439393153769325
+  }
+}

@@ -157,6 +157,27 @@ python benchmarks/compare_poly.py --samples 50000
 
 ---
 
+### 6. `experiment_poly_clamped.py` - Poly Clamp Wrapper (Experiment F)
+Compares baseline PolyMixer inference against the new clamp wrapper:
+- Gray fallback for near-gray endpoint pairs
+- Endpoint damping (`4*t*(1-t)`) toward linear RGB blend
+
+**Usage:**
+```bash
+python scripts/experiment_poly_clamped.py
+
+# Larger run + JSON artifact
+python scripts/experiment_poly_clamped.py --samples 20000 --repeats 20 --mixbox-samples 5000 \
+  --output benchmarks/experiment_f_poly_clamped.json
+```
+
+**Output:**
+- Baseline vs clamped speed (us/mix + wrapper overhead)
+- Drift from baseline, especially near t edges
+- Optional Delta-E vs Mixbox (if `pymixbox` is installed)
+
+---
+
 ## Test Color Pairs
 
 All benchmarks use the same 7 test pairs from Mixbox's documentation:

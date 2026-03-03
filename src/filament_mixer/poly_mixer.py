@@ -13,6 +13,8 @@ import numpy as np
 from pathlib import Path
 from typing import Tuple
 
+GRAY_CHANNEL_THRESHOLD = 3
+
 
 class PolyMixer:
     """
@@ -65,12 +67,28 @@ class PolyMixer:
         Returns:
             Mixed RGB color as (r, g, b) tuple.
         """
-        if t <= 0:
+        t = float(np.clip(t, 0.0, 1.0))
+        if t <= 0.0:
             return (r1, g1, b1)
-        if t >= 1:
+        if t >= 1.0:
             return (r2, g2, b2)
 
+        c1 = np.array([r1, g1, b1], dtype=float)
+        c2 = np.array([r2, g2, b2], dtype=float)
+        base = (1.0 - t) * c1 + t * c2
+
+        # If both endpoints are near-gray, plain RGB lerp is more stable.
+        is_gray1 = (np.max(c1) - np.min(c1)) <= GRAY_CHANNEL_THRESHOLD
+        is_gray2 = (np.max(c2) - np.min(c2)) <= GRAY_CHANNEL_THRESHOLD
+        if is_gray1 and is_gray2:
+            out = np.clip(base, 0, 255).astype(int)
+            return (int(out[0]), int(out[1]), int(out[2]))
+
         X = np.array([[r1, g1, b1, r2, g2, b2, t]])
-        pred = self.model.predict(X)[0]
-        pred = np.clip(pred, 0, 255).astype(int)
-        return (int(pred[0]), int(pred[1]), int(pred[2]))
+        pred = np.clip(self.model.predict(X)[0], 0.0, 255.0)
+
+        # Damp polynomial influence near endpoints; keep full strength at t=0.5.
+        clamp_strength = 4.0 * t * (1.0 - t)
+        out = base + clamp_strength * (pred - base)
+        out = np.clip(out, 0, 255).astype(int)
+        return (int(out[0]), int(out[1]), int(out[2]))
