@@ -525,10 +525,14 @@ def generate_visual(results):
     steps = 100
 
     n_pairs = len(results)
-    n_methods = 3 if HAS_MIXBOX else 2
     method_labels = ["RGB Lerp", "FilamentMixer"]
+    if HAS_POLY and poly_mixer is not None:
+        method_labels.append("PolyMixer")
+    if HAS_GP and gp_mixer is not None:
+        method_labels.append("GPMixer")
     if HAS_MIXBOX:
         method_labels.append("Mixbox")
+    n_methods = len(method_labels)
 
     fig, axes = plt.subplots(
         n_pairs, n_methods, figsize=(4 * n_methods, 1.6 * n_pairs)
@@ -547,6 +551,10 @@ def generate_visual(results):
                     rgb = rgb_lerp(c1, c2, t)
                 elif method == "FilamentMixer":
                     rgb = mixer.lerp(*c1, *c2, t)
+                elif method == "PolyMixer":
+                    rgb = poly_mixer.lerp(*c1, *c2, t)
+                elif method == "GPMixer":
+                    rgb = gp_mixer.lerp(*c1, *c2, t)
                 elif method == "Mixbox":
                     rgb = mixbox.lerp(c1, c2, t)
                 else:

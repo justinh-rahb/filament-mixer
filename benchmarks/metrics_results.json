@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-02-11 03:35:13",
+  "timestamp": "2026-03-02 20:50:21",
   "test_pairs": 7,
   "has_mixbox": true,
   "mixers": [
@@ -155,7 +155,7 @@
       },
       "model": null,
       "initialization": {
-        "time_ms": 0.0817,
+        "time_ms": 0.0813,
         "memory_peak_kb": 3.53,
         "memory_peak_mb": 0.0
       },
@@ -163,16 +163,16 @@
         "iterations": 100,
         "samples_per_iteration": 7,
         "total_ms": {
-          "mean": 33.55982994660735,
-          "std": 0.6913703941761461,
-          "min": 32.33079146593809,
-          "max": 35.896167159080505
+          "mean": 36.55685953912325,
+          "std": 8.613006111180827,
+          "min": 33.51329197175801,
+          "max": 119.21670800074935
         },
         "per_call_ms": {
-          "mean": 4.794261420943908,
-          "std": 0.09876719916802087,
-          "min": 4.618684495134013,
-          "max": 5.1280238798686435
+          "mean": 5.222408505589036,
+          "std": 1.2304294444544035,
+          "min": 4.7876131388225724,
+          "max": 17.030958285821335
         }
       },
       "accuracy": {
@@ -288,15 +288,168 @@
       }
     },
     {
+      "name": "FastLUT",
+      "source_code": {
+        "module": "FastLUT",
+        "files": 1,
+        "lines": {
+          "total": 403,
+          "code": 143,
+          "comments": 208,
+          "blank": 52
+        }
+      },
+      "model": {
+        "name": "FastLUT",
+        "path": "/Users/justinh/Development/github.com/justinh-rahb/filament-mixer/lut_cache/unmix_lut_256.pkl",
+        "size_bytes": 201326762,
+        "size_kb": 196608.17,
+        "size_mb": 192.0,
+        "exists": true
+      },
+      "initialization": {
+        "time_ms": 271.1655,
+        "memory_peak_kb": 393231.9,
+        "memory_peak_mb": 384.02
+      },
+      "performance": {
+        "iterations": 100,
+        "samples_per_iteration": 7,
+        "total_ms": {
+          "mean": 0.179468363057822,
+          "std": 0.11238689915341839,
+          "min": 0.13191706966608763,
+          "max": 0.8047500159591436
+        },
+        "per_call_ms": {
+          "mean": 0.025638337579688857,
+          "std": 0.016055271307631198,
+          "min": 0.018845295666583946,
+          "max": 0.11496428799416337
+        }
+      },
+      "accuracy": {
+        "available": true,
+        "samples": 7,
+        "delta_e": {
+          "mean": 11.774555339444571,
+          "std": 6.977740347734239,
+          "min": 5.480281510225292,
+          "max": 24.776229057075522,
+          "median": 7.8640549054625435
+        },
+        "details": [
+          {
+            "test": "Blue + Yellow",
+            "predicted": [
+              78,
+              102,
+              47
+            ],
+            "ground_truth": [
+              41,
+              130,
+              57
+            ],
+            "delta_e": 24.776229057075522
+          },
+          {
+            "test": "Red + Blue",
+            "predicted": [
+              89,
+              33,
+              44
+            ],
+            "ground_truth": [
+              85,
+              47,
+              58
+            ],
+            "delta_e": 10.079698811173907
+          },
+          {
+            "test": "Red + Yellow",
+            "predicted": [
+              250,
+              105,
+              2
+            ],
+            "ground_truth": [
+              255,
+              103,
+              27
+            ],
+            "delta_e": 5.480281510225292
+          },
+          {
+            "test": "Magenta + Yellow",
+            "predicted": [
+              171,
+              77,
+              31
+            ],
+            "ground_truth": [
+              190,
+              80,
+              35
+            ],
+            "delta_e": 7.565985045896272
+          },
+          {
+            "test": "Blue + White",
+            "predicted": [
+              96,
+              132,
+              197
+            ],
+            "ground_truth": [
+              72,
+              146,
+              246
+            ],
+            "delta_e": 20.09016875057704
+          },
+          {
+            "test": "Red + White",
+            "predicted": [
+              253,
+              133,
+              104
+            ],
+            "ground_truth": [
+              255,
+              130,
+              117
+            ],
+            "delta_e": 7.8640549054625435
+          },
+          {
+            "test": "Green + Magenta",
+            "predicted": [
+              64,
+              18,
+              49
+            ],
+            "ground_truth": [
+              67,
+              28,
+              64
+            ],
+            "delta_e": 6.565469295701439
+          }
+        ]
+      }
+    },
+    {
       "name": "PolyMixer",
       "source_code": {
         "module": "PolyMixer",
         "files": 1,
         "lines": {
-          "total": 76,
-          "code": 32,
-          "comments": 35,
-          "blank": 9
+          "total": 234,
+          "code": 17,
+          "comments": 212,
+          "blank": 5
         }
       },
       "model": {
@@ -308,134 +461,134 @@
         "exists": true
       },
       "initialization": {
-        "time_ms": 1505.1026,
-        "memory_peak_kb": 30004.37,
-        "memory_peak_mb": 29.3
+        "time_ms": 0.0046,
+        "memory_peak_kb": 0.32,
+        "memory_peak_mb": 0.0
       },
       "performance": {
         "iterations": 100,
         "samples_per_iteration": 7,
         "total_ms": {
-          "mean": 0.6646025273948908,
-          "std": 0.044073427652210916,
-          "min": 0.6315829232335091,
-          "max": 0.921458937227726
+          "mean": 0.6728012743405998,
+          "std": 0.11346010606955027,
+          "min": 0.6240829825401306,
+          "max": 1.4677919680252671
         },
         "per_call_ms": {
-          "mean": 0.09494321819927011,
-          "std": 0.006296203950315847,
-          "min": 0.0902261318905013,
-          "max": 0.1316369910325323
+          "mean": 0.09611446776294282,
+          "std": 0.016208586581364325,
+          "min": 0.08915471179144722,
+          "max": 0.20968456686075246
         }
       },
       "accuracy": {
         "available": true,
         "samples": 7,
         "delta_e": {
-          "mean": 5.598941746311288,
-          "std": 3.5722077567381465,
-          "min": 1.5704306632494256,
-          "max": 11.952730833621402,
-          "median": 5.967518320743588
+          "mean": 8.065566237714256,
+          "std": 4.5232147482624825,
+          "min": 1.4615109861814015,
+          "max": 14.370489012466514,
+          "median": 7.543545348862211
         },
         "details": [
           {
             "test": "Blue + Yellow",
             "predicted": [
-              47,
-              141,
-              56
+              42,
+              148,
+              49
             ],
             "ground_truth": [
               41,
               130,
               57
             ],
-            "delta_e": 7.081571340752978
+            "delta_e": 14.370489012466514
           },
           {
             "test": "Red + Blue",
             "predicted": [
-              83,
-              44,
-              54
+              76,
+              39,
+              50
             ],
             "ground_truth": [
               85,
               47,
               58
             ],
-            "delta_e": 1.5704306632494256
+            "delta_e": 3.648885198271656
           },
           {
             "test": "Red + Yellow",
             "predicted": [
               255,
               100,
-              22
+              24
             ],
             "ground_truth": [
               255,
               103,
               27
             ],
-            "delta_e": 1.7166057967072341
+            "delta_e": 1.4615109861814015
           },
           {
             "test": "Magenta + Yellow",
             "predicted": [
-              179,
-              87,
-              29
+              174,
+              93,
+              28
             ],
             "ground_truth": [
               190,
               80,
               35
             ],
-            "delta_e": 8.215498151544823
+            "delta_e": 13.537845848322748
           },
           {
             "test": "Blue + White",
             "predicted": [
-              80,
-              151,
-              231
+              88,
+              147,
+              229
             ],
             "ground_truth": [
               72,
               146,
               246
             ],
-            "delta_e": 11.952730833621402
+            "delta_e": 10.195319494292415
           },
           {
             "test": "Red + White",
             "predicted": [
               255,
-              134,
-              116
+              117,
+              102
             ],
             "ground_truth": [
               255,
               130,
               117
             ],
-            "delta_e": 2.688237117559568
+            "delta_e": 7.543545348862211
           },
           {
             "test": "Green + Magenta",
             "predicted": [
-              66,
-              27,
-              54
+              64,
+              28,
+              55
             ],
             "ground_truth": [
               67,
               28,
               64
             ],
-            "delta_e": 5.967518320743588
+            "delta_e": 5.701367775602854
           }
         ]
       }
@@ -461,24 +614,24 @@
         "exists": true
       },
       "initialization": {
-        "time_ms": 21.0878,
-        "memory_peak_kb": 31894.69,
-        "memory_peak_mb": 31.15
+        "time_ms": 1495.5523,
+        "memory_peak_kb": 58522.4,
+        "memory_peak_mb": 57.15
       },
       "performance": {
         "iterations": 100,
         "samples_per_iteration": 7,
         "total_ms": {
-          "mean": 0.37579295225441456,
-          "std": 0.02315457494677848,
-          "min": 0.36295875906944275,
-          "max": 0.5064588040113449
+          "mean": 0.4008095827884972,
+          "std": 0.07369829833426365,
+          "min": 0.36145898047834635,
+          "max": 0.799124944023788
         },
         "per_call_ms": {
-          "mean": 0.05368470746491636,
-          "std": 0.003307796420968355,
-          "min": 0.05185125129563468,
-          "max": 0.07235125771590642
+          "mean": 0.057258511826928184,
+          "std": 0.010528328333466234,
+          "min": 0.05163699721119234,
+          "max": 0.11416070628911257
         }
       },
       "accuracy": {
@@ -589,6 +742,152 @@
               64
             ],
             "delta_e": 3.2978815807572968
+          }
+        ]
+      }
+    },
+    {
+      "name": "Mixbox",
+      "source_code": {
+        "module": "Mixbox",
+        "files": 0,
+        "lines": {
+          "total": 0,
+          "code": 0,
+          "comments": 0,
+          "blank": 0
+        }
+      },
+      "model": null,
+      "initialization": {
+        "time_ms": 0.0028,
+        "memory_peak_kb": 0.32,
+        "memory_peak_mb": 0.0
+      },
+      "performance": {
+        "iterations": 100,
+        "samples_per_iteration": 7,
+        "total_ms": {
+          "mean": 0.060668273363262415,
+          "std": 0.0018594999161468506,
+          "min": 0.05862500984221697,
+          "max": 0.07120799273252487
+        },
+        "per_call_ms": {
+          "mean": 0.008666896194751772,
+          "std": 0.00026564284516383574,
+          "min": 0.008375001406030995,
+          "max": 0.010172570390360696
+        }
+      },
+      "accuracy": {
+        "available": true,
+        "samples": 7,
+        "delta_e": {
+          "mean": 0.0,
+          "std": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "median": 0.0
+        },
+        "details": [
+          {
+            "test": "Blue + Yellow",
+            "predicted": [
+              41,
+              130,
+              57
+            ],
+            "ground_truth": [
+              41,
+              130,
+              57
+            ],
+            "delta_e": 0.0
+          },
+          {
+            "test": "Red + Blue",
+            "predicted": [
+              85,
+              47,
+              58
+            ],
+            "ground_truth": [
+              85,
+              47,
+              58
+            ],
+            "delta_e": 0.0
+          },
+          {
+            "test": "Red + Yellow",
+            "predicted": [
+              255,
+              103,
+              27
+            ],
+            "ground_truth": [
+              255,
+              103,
+              27
+            ],
+            "delta_e": 0.0
+          },
+          {
+            "test": "Magenta + Yellow",
+            "predicted": [
+              190,
+              80,
+              35
+            ],
+            "ground_truth": [
+              190,
+              80,
+              35
+            ],
+            "delta_e": 0.0
+          },
+          {
+            "test": "Blue + White",
+            "predicted": [
+              72,
+              146,
+              246
+            ],
+            "ground_truth": [
+              72,
+              146,
+              246
+            ],
+            "delta_e": 0.0
+          },
+          {
+            "test": "Red + White",
+            "predicted": [
+              255,
+              130,
+              117
+            ],
+            "ground_truth": [
+              255,
+              130,
+              117
+            ],
+            "delta_e": 0.0
+          },
+          {
+            "test": "Green + Magenta",
+            "predicted": [
+              67,
+              28,
+              64
+            ],
+            "ground_truth": [
+              67,
+              28,
+              64
+            ],
+            "delta_e": 0.0
           }
         ]
       }

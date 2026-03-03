@@ -5,12 +5,12 @@
   "seed": 42,
   "speed": {
     "batch_size": 20000,
-    "baseline_ms_per_batch": 25.108754151733592,
-    "clamp_overlay_ms_per_batch": 2.016137499595061,
-    "clamped_ms_per_batch": 27.124891651328653,
-    "baseline_us_per_mix": 1.2554377075866796,
-    "clamped_us_per_mix": 1.3562445825664327,
-    "overhead_percent": 8.029619818695226
+    "baseline_ms_per_batch": 26.616012502927333,
+    "clamp_overlay_ms_per_batch": 2.0632979518268257,
+    "clamped_ms_per_batch": 28.67931045475416,
+    "baseline_us_per_mix": 1.3308006251463667,
+    "clamped_us_per_mix": 1.433965522737708,
+    "overhead_percent": 7.7520926607616225
   },
   "drift": {
     "mean_channel_shift_all": 1.3519833333333333,
